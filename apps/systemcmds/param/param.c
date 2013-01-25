@@ -63,6 +63,8 @@ static void	do_show(const char* search_string);
 static void	do_show_print(void *arg, param_t param);
 static void	do_set(const char* name, const char* val);
 
+extern double strtod(const char *s00, char **se);
+
 int
 param_main(int argc, char *argv[])
 {
@@ -276,14 +278,13 @@ do_set(const char* name, const char* val)
 
 	case PARAM_TYPE_FLOAT:
 		if (!param_get(param, &f)) {
-			printf("float values are not yet supported.");
-			// printf("old: %4.4f", (double)f);
+			printf("old: %4.4f", (double)f);
 
-			// /* convert string */
-			// char* end;
-			// f = strtof(val,&end);
-			// param_set(param, &f);
-			// printf(" -> new: %4.4f\n", f);
+			/* convert string */
+			char* end;
+			f = strtod(val,&end);
+			param_set(param, &f);
+			printf(" -> new: %4.4f\n", f);
 
 		}
 
