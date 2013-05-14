@@ -1,0 +1,30 @@
+<mavlink>
+     <version>1</version>
+     <enums>
+     	<enum name="STAR_ENUMS">
+     		  <description>Oversikt over alle enums vi har definert</description>
+     			<entry value="180" name="STAR_IMAGE_METADATA">
+                    <description>MAVLink custom message ID for STAR_IMAGE_METADATA</description>
+               </entry>
+     	</enum>
+     </enums>
+     <messages>
+          <message id="180" name="STAR_IMAGE_METADATA">
+               <description>This struct holds the neccesary data for georeferencing and projecting an image onto a map.</description>
+               <field type="uint64_t" name="time_gps_usec">Time from GPS</field>
+               <field type="uint64_t" name="gps_timestamp">Local time for LLA and time_gps_usec</field>
+               <field type="uint64_t" name="att_timestamp">Local time for attitude</field>
+               <field type="float" name="variance_m">Accuracy of LLA in meters</field>
+               <field type="uint32_t" name="lat">Latitude in 1E7 degrees</field>
+               <field type="int32_t" name="lon">Longitude in 1E7 degrees</field>
+               <field type="int32_t" name="alt">Altitude in 1E3 meters (millimeters) above MSL</field>
+               <field type="float" name="roll"> Roll angle (rad, Tait-Bryan, NED)</field>
+               <field type="float" name="pitch"> Pitch angle (rad, Tait-Bryan, NED)</field>
+               <field type="float" name="yaw"> Yaw angle (rad, Tait-Bryan, NED)</field>
+               <field type="uint8_t[30]" name="file_name">Name of imagefile</field>
+               <field type="float" name="view_angle"> Angle of view</field>
+               <field type="float" name="focal_length">length of the focal</field>
+               <field type="uint8_t" name="star_sys_id">userdefined ID of this system</field>
+          </message>
+     </messages>
+</mavlink>
