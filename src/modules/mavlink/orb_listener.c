@@ -48,6 +48,11 @@
 #include <string.h>
 #include "mavlink_bridge_header.h"
 #include <v1.0/common/mavlink.h>
+
+///STAR - Image Metadata
+//#include <v1.0/image_metadata/mavlink_msg_star_image_metadata.h>
+#include <v1.0/image_metadata/image_metadata.h>
+
 #include <drivers/drv_hrt.h>
 #include <time.h>
 #include <float.h>
@@ -117,6 +122,10 @@ static void	l_optical_flow(const struct listener *l);
 static void	l_vehicle_rates_setpoint(const struct listener *l);
 static void	l_home(const struct listener *l);
 
+//STAR - Metadata
+static void	l_star(const struct listener *l);
+
+
 static const struct listener listeners[] = {
 	{l_sensor_combined,		&mavlink_subs.sensor_sub,	0},
 	{l_vehicle_attitude,		&mavlink_subs.att_sub,		0},
@@ -140,6 +149,7 @@ static const struct listener listeners[] = {
 	{l_optical_flow,		&mavlink_subs.optical_flow,	0},
 	{l_vehicle_rates_setpoint,	&mavlink_subs.rates_setpoint_sub,	0},
 	{l_home,			&mavlink_subs.home_sub,		0},
+	{l_star,			&mavlink_subs.star_image_metadata,		0},
 };
 
 static const unsigned n_listeners = sizeof(listeners) / sizeof(listeners[0]);
@@ -675,6 +685,68 @@ uorb_receive_thread(void *arg)
 
 	return NULL;
 }
+
+
+/////////STAR Image Metadata Callback function
+void
+l_star(const struct listener *l)
+{
+	struct star_image_metadata_s metadata;
+
+
+	/* copy attitude data into local buffer */
+	orb_copy(ORB_ID(star_image_metadata), mavlink_subs.star_image_metadata, &metadata);
+
+	bool doit = true;
+
+	if (gcs_link && doit){
+		/* send Metadata values */
+		/*
+		 * static inline void mavlink_msg_star_image_metadata_send(
+		 * mavlink_channel_t chan,
+		 * uint64_t time_gps_usec,
+		 * uint64_t gps_timestamp,
+		 * uint64_t att_timestamp,
+		 *  float variance_m,
+		 *  uint32_t lat,
+		 *   int32_t lon,
+		 *   int32_t alt,
+		 *   float roll,
+		 *   float pitch,
+		 *   float yaw,
+		 *   const uint8_t *file_name,
+		 *    float view_angle,
+		 *    float focal_length,
+		 *    uint8_t star_sys_id)
+		 */
+		mavlink_msg_star_image_metadata_send(MAVLINK_COMM_0,
+				metadata.time_gps_usec,
+				metadata.gps_timestamp,
+				metadata.att_timestamp,
+				metadata.variance_m,
+				metadata.lat,
+				metadata.lon,
+				metadata.alt,
+				metadata.roll,
+				metadata.pitch,
+				metadata.yaw,
+				metadata.file_name,
+				metadata.view_angle,
+				metadata.focal_length,
+				metadata.star_sys_id
+		);
+
+		////////LÅNER MESGID 253 :::::: OBS OBS::: DETTE ER MIDLERTIDIG!!!!
+		char str[60] = "Filnavn: ";
+
+		strcat(str, metadata.file_name);
+
+		mavlink_msg_statustext_send(MAVLINK_COMM_0, MAV_SEVERITY_INFO, str);
+
+	}
+}
+
+
 
 pthread_t
 uorb_receive_start(void)
