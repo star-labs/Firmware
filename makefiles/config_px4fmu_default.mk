@@ -8,6 +8,11 @@
 ROMFS_ROOT	 = $(PX4_BASE)/ROMFS/px4fmu_common
 
 #
+# STAR
+# 
+MODULES		+= star/bb_handler
+
+#
 # Board support modules
 #
 MODULES		+= drivers/device
