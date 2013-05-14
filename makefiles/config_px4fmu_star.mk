@@ -16,7 +16,7 @@
 include $(PX4_MK_DIR)/config_px4fmu_default.mk
 
 # Blir dette rett variabel?
-INCLUDE_DIRS += $(PX4_MODULE_SRC)/star/ 
+INCLUDE_DIRS += $(PX4_MODULE_SRC)/star/
 
 
 #
