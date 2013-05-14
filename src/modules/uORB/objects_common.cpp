@@ -154,3 +154,6 @@ ORB_DEFINE(actuator_outputs_3, struct actuator_outputs_s);
 
 #include "topics/debug_key_value.h"
 ORB_DEFINE(debug_key_value, struct debug_key_value_s);
+
+#include "topics/star_image_metadata.h"
+ORB_DEFINE(star_image_metadata, struct star_image_metadata_s);
