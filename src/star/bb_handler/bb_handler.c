@@ -14,8 +14,9 @@
  *  01100001 01101100 00100000 01010010 01100101 01100011
  *  01101111 01101110 01101110 01100001 01101001 01110011
  *  01110011 01100001 01101110 01100011 01100101
- *
- *
+ */
+
+ /**
  *
  * Denne filen er sterkt inspirert av mavlink.c
  *
@@ -441,9 +442,26 @@ int bb_handler_thread_main(int argc, char *argv[]){
 				struct vehicle_command_s raw;
 
 				orb_copy(ORB_ID(vehicle_command), com_sub_fd, &raw);
-
+				/* 	 Control onboard camera system.
+				 * | Camera ID (-1 for all)
+				 * | Transmission: 0: disabled, 1: enabled compressed, 2: enabled raw
+				 * | Transmission mode: 0: video stream, >0: single images every n seconds (decimal)
+				 * | Recording: 0: disabled, 1: enabled compressed, 2: enabled raw
+				 * | Empty| Empty| Empty|
+				 *
+				 *	Dette vil jo ikke funke. Hva om vi prøver følgende
+				 *
+				 *	Control BB camera
+				 *	param1| 0:image, 1:video, 2:burst
+				 *	param3| 0:start, 1:stop
+				 *	param4| 0:one image, >0:number of images
+				 *	param5| stop after seconds
+				 *	param6| image per second, seconds per image if negative
+				 *	param7| NOT IN USE
+				 */
 				if (raw.command == VEHICLE_CMD_DO_CONTROL_VIDEO){
 					/* TO DO: ADD CODE HERE */
+
 					bb_debug("NOT IMPLEMENTED: VEHICLE_CMD_DO_CONTROL_VIDEO\n\n");
 				}
 			}
