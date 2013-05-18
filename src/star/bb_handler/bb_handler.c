@@ -14,8 +14,9 @@
  *  01100001 01101100 00100000 01010010 01100101 01100011
  *  01101111 01101110 01101110 01100001 01101001 01110011
  *  01110011 01100001 01101110 01100011 01100101
- *
- *
+ */
+
+ /**
  *
  * Denne filen er sterkt inspirert av mavlink.c
  *
@@ -235,15 +236,19 @@ int bb_handler_thread_main(int argc, char *argv[]){
 
 	int com_sub_fd = orb_subscribe(ORB_ID(vehicle_command));
 	orb_set_interval(com_sub_fd, 1000);
+	struct vehicle_command_s vehicle_s;
 
 	int sensor_sub_fd = orb_subscribe(ORB_ID(sensor_combined));
 	orb_set_interval(sensor_sub_fd, 1000);
+	struct sensor_combined_s sensors_s;
 
 	int rc_sub_fd = orb_subscribe(ORB_ID(rc_channels));
 	orb_set_interval(rc_sub_fd, 500);
+	struct rc_channels_s rc_s;
 
 	int mc_sub_fd = orb_subscribe(ORB_ID(manual_control_setpoint));
 	orb_set_interval(mc_sub_fd, 500);
+	struct manual_control_setpoint_s mc_s;
 
 	int global_position_sub_fd = orb_subscribe(ORB_ID(vehicle_global_position));
 	orb_set_interval(global_position_sub_fd, 500);
@@ -257,6 +262,7 @@ int bb_handler_thread_main(int argc, char *argv[]){
 	int gps_sub_fd = orb_subscribe(ORB_ID(vehicle_gps_position));
 	orb_set_interval(gps_sub_fd, 500);
 	struct vehicle_gps_position_s gps_s;
+
 
 
 	struct pollfd fds[] = {
@@ -402,10 +408,48 @@ int bb_handler_thread_main(int argc, char *argv[]){
 					break;
 
 				case S_GETPOS:
+					send_len = sprintf(send_buffer, "%f %f %f\n",
+							gps_s.lat,					//< uint32_t
+							gps_s.lon,					//< uint32_t
+							gps_s.alt);					//< uint32_t
+					break;
+
 				case S_GETATT:
+					send_len = sprintf(send_buffer, "%f %f %f\n",
+							va_s.roll,					//< float
+							va_s.pitch,					//< float
+							va_s.yaw);					//< float
+					break;
+
 				case S_GETTEMP:
+					send_len = sprintf(send_buffer, "%f\n", sensors_s.baro_temp_celcius);
+					break;
+
 				case S_GETLOCALPOS:
 				case S_GETGPSRAW:
+					send_len = sprintf(send_buffer, "%d %d %d %f %f %f %d %f %f %f %f %f %f %llu %u\n",
+							gps_s.lat,
+							gps_s.lon,
+							gps_s.alt,
+
+							gps_s.s_variance_m_s,
+							gps_s.p_variance_m,
+							gps_s.c_variance_rad,
+							gps_s.fix_type,
+
+							gps_s.eph_m,
+							gps_s.epv_m,
+
+							gps_s.vel_m_s,
+							gps_s.vel_n_m_s,
+							gps_s.vel_e_m_s,
+							gps_s.vel_d_m_s,
+
+							gps_s.time_gps_usec,
+							gps_s.satellites_visible);
+
+					break;
+
 				case S_NA:
 				default:
 
@@ -438,47 +482,62 @@ int bb_handler_thread_main(int argc, char *argv[]){
 			fflush(stderr);
 		}else{
 			if (fds[0].revents & POLLIN){
-				struct vehicle_command_s raw;
+
+
+				orb_copy(ORB_ID(vehicle_command), com_sub_fd, &vehicle_s);
+
+				if (vehicle_s.command == VEHICLE_CMD_DO_CONTROL_VIDEO){
 
 				orb_copy(ORB_ID(vehicle_command), com_sub_fd, &raw);
-
+				/* 	 Control onboard camera system.
+				 * | Camera ID (-1 for all)
+				 * | Transmission: 0: disabled, 1: enabled compressed, 2: enabled raw
+				 * | Transmission mode: 0: video stream, >0: single images every n seconds (decimal)
+				 * | Recording: 0: disabled, 1: enabled compressed, 2: enabled raw
+				 * | Empty| Empty| Empty|
+				 *
+				 *	Dette vil jo ikke funke. Hva om vi prøver følgende
+				 *
+				 *	Control BB camera
+				 *	param1| 0:image, 1:stop, 2:burst, 3:video,
+				 *	param2| 0:one image, >0:number of images
+				 *	param3| stop after seconds
+				 *	param4| image per second, seconds per image if negative
+				 *	param5| NOT IN USE
+				 *	param6| NOT IN USE
+				 *	param7| NOT IN USE
+				 */
 				if (raw.command == VEHICLE_CMD_DO_CONTROL_VIDEO){
 					/* TO DO: ADD CODE HERE */
+
 					bb_debug("NOT IMPLEMENTED: VEHICLE_CMD_DO_CONTROL_VIDEO\n\n");
 				}
 			}
 
-			/*
+
 			if (fds[1].revents & POLLIN){
-				struct sensor_combined_s raw;
-
-				orb_copy(ORB_ID(sensor_combined), sensor_sub_fd, &raw);
-				printf("Gunnar sier: Vi har %2.2f grader i lufta og tyngdeakselerasjonen er: %4.8f\n",
-						(double) raw.baro_temp_celcius,
-						(double) raw.accelerometer_m_s2[2]);
+				orb_copy(ORB_ID(sensor_combined), sensor_sub_fd, &sensors_s);
 			}
-
+/*
 			if (fds[2].revents & POLLIN){
-				struct rc_channels_s raw;
-				orb_copy(ORB_ID(rc_channels), rc_sub_fd, &raw);
 
-				if(raw.chan[raw.function[AUX_3]].scaled > 0){
+				orb_copy(ORB_ID(rc_channels), rc_sub_fd, &rc_s);
 
+				if(rc_s.chan[rc_s.function[AUX_3]].scaled > 0)
+				{
 					bb_send_uart_bytes(cmds[0], strlen(cmds[0]));
-
-					warnx("Ta(r) bilde RC");
-
+					bb_debug("Ta(r) bilde RC");
 				}
 
 
-			}*/
-
+			}
+*/
 			if (fds[3].revents & POLLIN){
-				struct manual_control_setpoint_s raw;
 
-				orb_copy(ORB_ID(manual_control_setpoint), mc_sub_fd, &raw);
+
+				orb_copy(ORB_ID(manual_control_setpoint), mc_sub_fd, &mc_s);
 				char send_str[80];
-				if(raw.aux3 > 0 && !is_trigged){
+				if(mc_s.aux3 > 0 && !is_trigged){
 
 					for(int q = 0; q < n_cmds; q++){
 						if(cmds[q].signal == S_IMAGE){
@@ -497,7 +556,7 @@ int bb_handler_thread_main(int argc, char *argv[]){
 
 				}
 
-				if(raw.aux3 < 0)
+				if(mc_s.aux3 < 0)
 					is_trigged = false;
 			}
 

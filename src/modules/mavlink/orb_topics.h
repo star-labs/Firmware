@@ -60,7 +60,13 @@
 #include <uORB/topics/actuator_controls.h>
 #include <uORB/topics/manual_control_setpoint.h>
 #include <uORB/topics/debug_key_value.h>
+
+//STAR - Image Metadata
+#include <uORB/topics/star_image_metadata.h>
+
 #include <drivers/drv_rc_input.h>
+
+
 
 struct mavlink_subscriptions {
 	int sensor_sub;
@@ -83,6 +89,8 @@ struct mavlink_subscriptions {
 	int optical_flow;
 	int rates_setpoint_sub;
 	int home_sub;
+	//STAR - Image Metadata
+	int star_image_metadata;
 };
 
 extern struct mavlink_subscriptions mavlink_subs;
