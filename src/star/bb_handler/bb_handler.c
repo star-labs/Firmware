@@ -488,26 +488,27 @@ int bb_handler_thread_main(int argc, char *argv[]){
 
 				if (vehicle_s.command == VEHICLE_CMD_DO_CONTROL_VIDEO){
 
-				/* 	 Control onboard camera system.
-				 * | Camera ID (-1 for all)
-				 * | Transmission: 0: disabled, 1: enabled compressed, 2: enabled raw
-				 * | Transmission mode: 0: video stream, >0: single images every n seconds (decimal)
-				 * | Recording: 0: disabled, 1: enabled compressed, 2: enabled raw
-				 * | Empty| Empty| Empty|
-				 *
-				 *	Dette vil jo ikke funke. Hva om vi prøver følgende
-				 *
-				 *	Control BB camera
-				 *	param1| 0:image, 1:stop, 2:burst, 3:video,
-				 *	param2| 0:one image, >0:number of images
-				 *	param3| stop after seconds
-				 *	param4| image per second, seconds per image if negative
-				 *	param5| NOT IN USE
-				 *	param6| NOT IN USE
-				 *	param7| NOT IN USE
-				 */
+					/* 	 Control onboard camera system.
+					 * | Camera ID (-1 for all)
+					 * | Transmission: 0: disabled, 1: enabled compressed, 2: enabled raw
+					 * | Transmission mode: 0: video stream, >0: single images every n seconds (decimal)
+					 * | Recording: 0: disabled, 1: enabled compressed, 2: enabled raw
+					 * | Empty| Empty| Empty|
+					 *
+					 *	Dette vil jo ikke funke. Hva om vi prøver følgende
+					 *
+					 *	Control BB camera
+					 *	param1| 0:image, 1:stop, 2:burst, 3:video,
+					 *	param2| 0:one image, >0:number of images
+					 *	param3| stop after seconds
+					 *	param4| image per second, seconds per image if negative
+					 *	param5| NOT IN USE
+					 *	param6| NOT IN USE
+					 *	param7| NOT IN USE
+					 */
 
-				bb_debug("NOT IMPLEMENTED: VEHICLE_CMD_DO_CONTROL_VIDEO\n\n");
+					bb_debug("NOT IMPLEMENTED: VEHICLE_CMD_DO_CONTROL_VIDEO\n\n");
+				}
 
 			}
 
