@@ -488,7 +488,6 @@ int bb_handler_thread_main(int argc, char *argv[]){
 
 				if (vehicle_s.command == VEHICLE_CMD_DO_CONTROL_VIDEO){
 
-				orb_copy(ORB_ID(vehicle_command), com_sub_fd, &raw);
 				/* 	 Control onboard camera system.
 				 * | Camera ID (-1 for all)
 				 * | Transmission: 0: disabled, 1: enabled compressed, 2: enabled raw
@@ -507,11 +506,9 @@ int bb_handler_thread_main(int argc, char *argv[]){
 				 *	param6| NOT IN USE
 				 *	param7| NOT IN USE
 				 */
-				if (raw.command == VEHICLE_CMD_DO_CONTROL_VIDEO){
-					/* TO DO: ADD CODE HERE */
 
-					bb_debug("NOT IMPLEMENTED: VEHICLE_CMD_DO_CONTROL_VIDEO\n\n");
-				}
+				bb_debug("NOT IMPLEMENTED: VEHICLE_CMD_DO_CONTROL_VIDEO\n\n");
+
 			}
 
 
