@@ -458,6 +458,7 @@ int bb_handler_thread_main(int argc, char *argv[]){
 				 *	param4| image per second, seconds per image if negative
 				 *	param5| NOT IN USE
 				 *	param6| NOT IN USE
+				 *	param7| NOT IN USE
 				 */
 				if (raw.command == VEHICLE_CMD_DO_CONTROL_VIDEO){
 					/* TO DO: ADD CODE HERE */
