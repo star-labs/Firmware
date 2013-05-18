@@ -483,12 +483,11 @@ int bb_handler_thread_main(int argc, char *argv[]){
 		}else{
 			if (fds[0].revents & POLLIN){
 
-<<<<<<< HEAD
 
 				orb_copy(ORB_ID(vehicle_command), com_sub_fd, &vehicle_s);
 
 				if (vehicle_s.command == VEHICLE_CMD_DO_CONTROL_VIDEO){
-=======
+
 				orb_copy(ORB_ID(vehicle_command), com_sub_fd, &raw);
 				/* 	 Control onboard camera system.
 				 * | Camera ID (-1 for all)
@@ -509,7 +508,6 @@ int bb_handler_thread_main(int argc, char *argv[]){
 				 *	param7| NOT IN USE
 				 */
 				if (raw.command == VEHICLE_CMD_DO_CONTROL_VIDEO){
->>>>>>> 5c78e9973c643b996aa0105cbdaefed29b4bdedf
 					/* TO DO: ADD CODE HERE */
 
 					bb_debug("NOT IMPLEMENTED: VEHICLE_CMD_DO_CONTROL_VIDEO\n\n");
