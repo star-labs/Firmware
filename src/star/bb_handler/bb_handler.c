@@ -452,12 +452,12 @@ int bb_handler_thread_main(int argc, char *argv[]){
 				 *	Dette vil jo ikke funke. Hva om vi prøver følgende
 				 *
 				 *	Control BB camera
-				 *	param1| 0:image, 1:video, 2:burst
-				 *	param3| 0:start, 1:stop
-				 *	param4| 0:one image, >0:number of images
-				 *	param5| stop after seconds
-				 *	param6| image per second, seconds per image if negative
-				 *	param7| NOT IN USE
+				 *	param1| 0:image, 1:stop, 2:burst, 3:video,
+				 *	param2| 0:one image, >0:number of images
+				 *	param3| stop after seconds
+				 *	param4| image per second, seconds per image if negative
+				 *	param5| NOT IN USE
+				 *	param6| NOT IN USE
 				 */
 				if (raw.command == VEHICLE_CMD_DO_CONTROL_VIDEO){
 					/* TO DO: ADD CODE HERE */
