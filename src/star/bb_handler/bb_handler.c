@@ -14,8 +14,9 @@
  *  01100001 01101100 00100000 01010010 01100101 01100011
  *  01101111 01101110 01101110 01100001 01101001 01110011
  *  01110011 01100001 01101110 01100011 01100101
- *
- *
+ */
+
+ /**
  *
  * Denne filen er sterkt inspirert av mavlink.c
  *
@@ -482,11 +483,35 @@ int bb_handler_thread_main(int argc, char *argv[]){
 		}else{
 			if (fds[0].revents & POLLIN){
 
+<<<<<<< HEAD
 
 				orb_copy(ORB_ID(vehicle_command), com_sub_fd, &vehicle_s);
 
 				if (vehicle_s.command == VEHICLE_CMD_DO_CONTROL_VIDEO){
+=======
+				orb_copy(ORB_ID(vehicle_command), com_sub_fd, &raw);
+				/* 	 Control onboard camera system.
+				 * | Camera ID (-1 for all)
+				 * | Transmission: 0: disabled, 1: enabled compressed, 2: enabled raw
+				 * | Transmission mode: 0: video stream, >0: single images every n seconds (decimal)
+				 * | Recording: 0: disabled, 1: enabled compressed, 2: enabled raw
+				 * | Empty| Empty| Empty|
+				 *
+				 *	Dette vil jo ikke funke. Hva om vi prøver følgende
+				 *
+				 *	Control BB camera
+				 *	param1| 0:image, 1:stop, 2:burst, 3:video,
+				 *	param2| 0:one image, >0:number of images
+				 *	param3| stop after seconds
+				 *	param4| image per second, seconds per image if negative
+				 *	param5| NOT IN USE
+				 *	param6| NOT IN USE
+				 *	param7| NOT IN USE
+				 */
+				if (raw.command == VEHICLE_CMD_DO_CONTROL_VIDEO){
+>>>>>>> 5c78e9973c643b996aa0105cbdaefed29b4bdedf
 					/* TO DO: ADD CODE HERE */
+
 					bb_debug("NOT IMPLEMENTED: VEHICLE_CMD_DO_CONTROL_VIDEO\n\n");
 				}
 			}
