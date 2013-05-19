@@ -636,6 +636,69 @@ l_home(const struct listener *l)
 	mavlink_msg_gps_global_origin_send(MAVLINK_COMM_0, home.lat, home.lon, home.alt);
 }
 
+
+
+/////////STAR Image Metadata Callback function
+void
+l_star(const struct listener *l)
+{
+	struct star_image_metadata_s metadata;
+
+
+	/* copy attitude data into local buffer */
+	orb_copy(ORB_ID(star_image_metadata), mavlink_subs.star_image_metadata, &metadata);
+
+	bool doit = true;
+
+	if (gcs_link && doit){
+		/* send Metadata values */
+
+		/*
+		 * static inline void mavlink_msg_star_image_metadata_send(
+		 * mavlink_channel_t chan,
+		 * uint64_t time_gps_usec,
+		 * uint64_t gps_timestamp,
+		 * uint64_t att_timestamp,
+		 *  float variance_m,
+		 *  uint32_t lat,
+		 *   int32_t lon,
+		 *   int32_t alt,
+		 *   float roll,
+		 *   float pitch,
+		 *   float yaw,
+		 *   const uint8_t *file_name,
+		 *    float view_angle,
+		 *    float focal_length,
+		 *    uint8_t star_sys_id)
+		 */
+		mavlink_msg_star_image_metadata_send(MAVLINK_COMM_0,
+				metadata.time_gps_usec,
+				metadata.gps_timestamp,
+				metadata.att_timestamp,
+				metadata.variance_m,
+				metadata.lat,
+				metadata.lon,
+				metadata.alt,
+				metadata.roll,
+				metadata.pitch,
+				metadata.yaw,
+				metadata.file_name,
+				metadata.view_angle,
+				metadata.focal_length,
+				metadata.star_sys_id
+		);
+
+		////////LÅNER MESGID 253 :::::: OBS OBS::: DETTE ER MIDLERTIDIG!!!!
+		char str[60] = "Filnavn: ";
+
+		strcat(str, metadata.file_name);
+
+		mavlink_msg_statustext_send(MAVLINK_COMM_0, MAV_SEVERITY_INFO, str);
+
+	}
+}
+
+
 static void *
 uorb_receive_thread(void *arg)
 {
@@ -684,66 +747,6 @@ uorb_receive_thread(void *arg)
 	}
 
 	return NULL;
-}
-
-
-/////////STAR Image Metadata Callback function
-void
-l_star(const struct listener *l)
-{
-	struct star_image_metadata_s metadata;
-
-
-	/* copy attitude data into local buffer */
-	orb_copy(ORB_ID(star_image_metadata), mavlink_subs.star_image_metadata, &metadata);
-
-	bool doit = true;
-
-	if (gcs_link && doit){
-		/* send Metadata values */
-		/*
-		 * static inline void mavlink_msg_star_image_metadata_send(
-		 * mavlink_channel_t chan,
-		 * uint64_t time_gps_usec,
-		 * uint64_t gps_timestamp,
-		 * uint64_t att_timestamp,
-		 *  float variance_m,
-		 *  uint32_t lat,
-		 *   int32_t lon,
-		 *   int32_t alt,
-		 *   float roll,
-		 *   float pitch,
-		 *   float yaw,
-		 *   const uint8_t *file_name,
-		 *    float view_angle,
-		 *    float focal_length,
-		 *    uint8_t star_sys_id)
-		 */
-		mavlink_msg_star_image_metadata_send(MAVLINK_COMM_0,
-				metadata.time_gps_usec,
-				metadata.gps_timestamp,
-				metadata.att_timestamp,
-				metadata.variance_m,
-				metadata.lat,
-				metadata.lon,
-				metadata.alt,
-				metadata.roll,
-				metadata.pitch,
-				metadata.yaw,
-				metadata.file_name,
-				metadata.view_angle,
-				metadata.focal_length,
-				metadata.star_sys_id
-		);
-
-		////////LÅNER MESGID 253 :::::: OBS OBS::: DETTE ER MIDLERTIDIG!!!!
-		char str[60] = "Filnavn: ";
-
-		strcat(str, metadata.file_name);
-
-		mavlink_msg_statustext_send(MAVLINK_COMM_0, MAV_SEVERITY_INFO, str);
-
-	}
 }
 
 
@@ -836,6 +839,10 @@ uorb_receive_start(void)
 	/* --- FLOW SENSOR --- */
 	mavlink_subs.optical_flow = orb_subscribe(ORB_ID(optical_flow));
 	orb_set_interval(mavlink_subs.optical_flow, 200); 	/* 5Hz updates */
+
+	/* --- STAR IMAGE METADATA --- */
+	mavlink_subs.star_image_metadata = orb_subscribe(ORB_ID(star_image_metadata));
+	orb_set_interval(mavlink_subs.star_image_metadata, 200); 	/* 5Hz updates */
 
 	/* start the listener loop */
 	pthread_attr_t uorb_attr;
