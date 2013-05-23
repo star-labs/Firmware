@@ -478,6 +478,7 @@ int bb_handler_thread_main(int argc, char *argv[]){
 		if(poll_ret == 0){
 
 		}else if(poll_ret < 0){
+			/* Vurder å legg inn en sperre mot flooding av consol */
 			fprintf(stderr, "IT DOES NOT MAKE SENSE - Har du glemt A starte uORB?\n");
 			fflush(stderr);
 		}else{
