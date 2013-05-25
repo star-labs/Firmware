@@ -478,6 +478,7 @@ int bb_handler_thread_main(int argc, char *argv[]){
 		if(poll_ret == 0){
 
 		}else if(poll_ret < 0){
+			/* Vurder å legg inn en sperre mot flooding av consol */
 			fprintf(stderr, "IT DOES NOT MAKE SENSE - Har du glemt A starte uORB?\n");
 			fflush(stderr);
 		}else{
@@ -505,9 +506,25 @@ int bb_handler_thread_main(int argc, char *argv[]){
 					 *	param5| NOT IN USE
 					 *	param6| NOT IN USE
 					 *	param7| NOT IN USE
+					 *
+					 *	============================
+					 *
+					 *	Param1
+					 *
 					 */
 
 					bb_debug("NOT IMPLEMENTED: VEHICLE_CMD_DO_CONTROL_VIDEO\n\n");
+
+					int valg = (int) vehicle_s.param1;
+					bool cap_wp_error = false;
+
+					if(valg < 0 || valg > 5){
+						cap_wp_error = true;
+					}
+
+
+
+
 				}
 
 			}
@@ -617,9 +634,10 @@ int bb_handler_main(int argc, char *argv[]){
 		bb_task = task_spawn("bb_responder",
 				SCHED_DEFAULT,
 				SCHED_PRIORITY_DEFAULT,
-				4096,
+				2048,
 				bb_handler_thread_main,
 				(const char **)argv);
+
 		if (bb_task < 1){
 			errx(0, "Klarte ikke A lage thread\n");
 		}
