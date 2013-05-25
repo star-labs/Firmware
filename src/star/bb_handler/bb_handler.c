@@ -630,9 +630,11 @@ int bb_handler_main(int argc, char *argv[]){
 
 	if(!strcmp(argv[1], "debugon")){
 		bb_debug_mode = true;
+		exit(0);
 	}
 	if(!strcmp(argv[1], "debugoff")){
 		bb_debug_mode = false;
+		exit(0);
 	}
 
 	warnx("unrecognized command");
