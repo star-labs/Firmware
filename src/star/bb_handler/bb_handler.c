@@ -57,6 +57,7 @@ static int bb_task;								/**< Handle of daemon task / thread */
 static int uart;
 static int baudrate;
 
+
 /* Buffers for thread*/
 char read_buffer[BUFFER_SIZE] = "\0";
 char read_buffer_local[BUFFER_SIZE] = "\0";
@@ -172,7 +173,7 @@ int bb_handler_thread_main(int argc, char *argv[]){
 	argc -= 2;
 	argv += 2;
 
-	while ((ch = getopt(argc, argv, "b:d:eo")) != EOF) {
+	while ((ch = getopt(argc, argv, "b:d:x:eo")) != EOF) {
 		switch (ch) {
 		case 'b':
 			baudrate = strtoul(optarg, NULL, 10);
@@ -595,7 +596,7 @@ int bb_handler_main(int argc, char *argv[]){
 		bb_task = task_spawn("bb_responder",
 				SCHED_DEFAULT,
 				SCHED_PRIORITY_DEFAULT,
-				2048,
+				3072,
 				bb_handler_thread_main,
 				(const char **)argv);
 
@@ -627,6 +628,13 @@ int bb_handler_main(int argc, char *argv[]){
 		}
 	}
 
+	if(!strcmp(argv[1], "debugon")){
+		bb_debug_mode = true;
+	}
+	if(!strcmp(argv[1], "debugoff")){
+		bb_debug_mode = false;
+	}
+
 	warnx("unrecognized command");
 	usage();
 	/* not getting here */
@@ -643,7 +651,9 @@ void usage()
 {
 	fprintf(stderr, "usage: bb_hanlder start [-d <devicename>] [-b <baud rate>]\n"
 			"       bb_hanlder stop\n"
-			"       bb_hanlder status\n");
+			"       bb_hanlder status\n"
+			"       bb_hanlder debugon\n"
+			"       bb_hanlder debugoff\n");
 	exit(1);
 }
 

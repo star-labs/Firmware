@@ -44,6 +44,10 @@
 #define STAR_DEBUG_FLAG 0
 #define BURST_MAX 100
 
+//Globalt flagg for debug funksjon
+bool bb_debug_mode = false;
+
+
 /** @brief Egen type for tilgjenlige kommandoer */
 typedef enum {
 	S_IMAGE 	= 0,
@@ -114,7 +118,8 @@ const int n_cmds = sizeof(cmds) / sizeof(cmds[0]);
 /** @brief Intern debuggings funksjon for bb_handler, avhenger av STAR_DEBUG_FLAG */
 void bb_debug(char* debug_str)
 {
-	if(STAR_DEBUG_FLAG)
+	//if(STAR_DEBUG_FLAG)
+	if(bb_debug_mode == true)
 	{
 		fprintf(stderr, "[bb_handler] %s", debug_str);
 		fflush(stderr);
