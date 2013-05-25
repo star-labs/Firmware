@@ -307,7 +307,7 @@ int bb_handler_thread_main(int argc, char *argv[]){
 
 			switch(selected){
 				case S_GETALL:
-					send_len = sprintf(send_buffer, "%llu %llu %llu %04.15f %u %u %u %04.15f %04.15f %04.15f\n", //endres !!!!!!!!!!!!!!
+					send_len = sprintf(send_buffer, "%llu %llu %llu %04.15f %u %u %u %04.15f %04.15f %04.15f\n",
 										gps_s.time_gps_usec, 		//< uint64_t
 										gps_s.timestamp_position,	//< uint64_t
 										va_s.timestamp,				//< uint64_t
@@ -325,9 +325,7 @@ int bb_handler_thread_main(int argc, char *argv[]){
 					break;
 
 				case S_OK:
-					/*
-					 * DETTE BØR FLYTTES VEKK HERFRA....
-					 */
+					/** TODO: DETTE BØR FLYTTES VEKK HERFRA.... */
 
 					//tokens[0]; //OK MELDING
 					//tokens[1]; //filnavn
@@ -431,7 +429,6 @@ int bb_handler_thread_main(int argc, char *argv[]){
 			fflush(stderr);
 		}else{
 			if (fds[0].revents & POLLIN){
-
 
 				orb_copy(ORB_ID(vehicle_command), com_sub_fd, &vehicle_s);
 
