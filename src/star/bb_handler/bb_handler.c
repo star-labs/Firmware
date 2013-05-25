@@ -370,7 +370,7 @@ int bb_handler_thread_main(int argc, char *argv[]){
 					break;
 
 				case S_GETATT:
-					send_len = sprintf(send_buffer, "%f %f %f\n",
+					send_len = sprintf(send_buffer, "%04.15f %04.15f %04.15f\n",
 							va_s.roll,					//< float
 							va_s.pitch,					//< float
 							va_s.yaw);					//< float
@@ -406,7 +406,7 @@ int bb_handler_thread_main(int argc, char *argv[]){
 				case S_NA:
 				default:
 					bb_debug("Ukjent komando\n\n");
-					//send_len = sprintf(send_buffer, "Feil eller ugyldig komando\n");
+					send_len = sprintf(send_buffer, "");
 					break;
 			}
 
