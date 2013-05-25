@@ -1273,6 +1273,9 @@ PX4IO::print_status()
 		((alarms & PX4IO_P_STATUS_ALARMS_FMU_LOST)      ? " FMU_LOST" : ""),
 		((alarms & PX4IO_P_STATUS_ALARMS_RC_LOST)       ? " RC_LOST" : ""),
 		((alarms & PX4IO_P_STATUS_ALARMS_PWM_ERROR)     ? " PWM_ERROR" : ""));
+	/* now clear alarms */
+	io_reg_set(PX4IO_PAGE_STATUS, PX4IO_P_STATUS_ALARMS, 0xFFFF);
+
 	printf("vbatt %u ibatt %u vbatt scale %u\n",
 	       io_reg_get(PX4IO_PAGE_STATUS, PX4IO_P_STATUS_VBATT),
 	       io_reg_get(PX4IO_PAGE_STATUS, PX4IO_P_STATUS_IBATT),
@@ -1356,6 +1359,16 @@ PX4IO::ioctl(file *filep, int cmd, unsigned long arg)
 	case PWM_SERVO_ARM:
 		/* set the 'armed' bit */
 		ret = io_reg_modify(PX4IO_PAGE_SETUP, PX4IO_P_SETUP_ARMING, 0, PX4IO_P_SETUP_ARMING_FMU_ARMED);
+		break;
+
+	case PWM_SERVO_SET_ARM_OK:
+		/* set the 'OK to arm' bit */
+		ret = io_reg_modify(PX4IO_PAGE_SETUP, PX4IO_P_SETUP_ARMING, 0, PX4IO_P_SETUP_ARMING_IO_ARM_OK);
+		break;
+
+	case PWM_SERVO_CLEAR_ARM_OK:
+		/* clear the 'OK to arm' bit */
+		ret = io_reg_modify(PX4IO_PAGE_SETUP, PX4IO_P_SETUP_ARMING, PX4IO_P_SETUP_ARMING_IO_ARM_OK, 0);
 		break;
 
 	case PWM_SERVO_DISARM:
