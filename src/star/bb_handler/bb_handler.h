@@ -81,8 +81,6 @@ struct query_s {
 	int (*callback)(char* send_buffer); /** < returner lengde av string i buffer (husk å sjekk om den er lengre en makroen for buffer) */
 };
 
-
-
 /* BB komunikasjons variable */
 
 /** @brief Kommandoer som BeagleBoard Capture tolker */
@@ -121,5 +119,15 @@ void bb_debug(char* debug_str)
 		fprintf(stderr, "[bb_handler] %s", debug_str);
 		fflush(stderr);
 	}
+}
+
+
+const char* get_command(internal_cmd_t c){
+	for(int i = 0; i < n_cmds; i++){
+		if(cmds[i].signal == c)
+			return cmds[i].cmd_name;
+	}
+	//Håper dette ikke skjer :P
+	return "error";
 }
 

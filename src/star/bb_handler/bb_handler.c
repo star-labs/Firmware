@@ -61,7 +61,7 @@ static int baudrate;
 char read_buffer[BUFFER_SIZE] = "\0";
 char read_buffer_local[BUFFER_SIZE] = "\0";
 char send_buffer[BUFFER_SIZE] = "\0";
-char tokens[8][32] = {'\0'};
+char tokens[8][32] = {"\0"};
 
 __EXPORT int bb_handler_main(int argc, char *argv[]);
 int bb_handler_thread_main(int argc, char *argv[]);
@@ -207,6 +207,7 @@ int bb_handler_thread_main(int argc, char *argv[]){
 	if (uart < 0){
 		err(1, "could not open %s", device_name);
 	}
+
 	thread_running = true;
 
 	int com_sub_fd = orb_subscribe(ORB_ID(vehicle_command));
@@ -248,9 +249,10 @@ int bb_handler_thread_main(int argc, char *argv[]){
 	bool is_trigged = false;
 	internal_query_t selected = S_NA;
 	int send_len = 0;
-	char separator = '|';
-	char split_str = " ";
+	char separator[] = "|";
+	char split_str[] = " ";
 	char send_str[80];
+	char dbg_str[100];
 
 	while (!thread_should_exit) {
 
@@ -273,7 +275,7 @@ int bb_handler_thread_main(int argc, char *argv[]){
 			strcat(read_buffer_local, read_buffer);
 		}
 
-		if(strchr(read_buffer_local, (int)separator) != NULL){
+		if(strchr(read_buffer_local, (int)separator[0]) != NULL){
 			//Hvis vi ikke har håndtert siste komando fra BB, så bare fortsett...
 
 			/// TODO: SKRIV OM DETTE TIL HELLER Å BYGGE OPP read_buffer_local SLIK AT DEN HÅNDTERES OM VI MOTTAR \n SYMBOL....
@@ -296,7 +298,8 @@ int bb_handler_thread_main(int argc, char *argv[]){
 
 			for(int i = 0; i < n_query; i++){
 
-				bb_debug(sprintf("Buffer er: %s og Query som testes er: %s\n", tokens[0], querys[i].cmd_name));
+				sprintf(dbg_str, "Buffer er: %s og Query som testes er: %s\n", tokens[0], querys[i].cmd_name);
+				bb_debug(dbg_str);
 
 				if(strcmp(tokens[0], querys[i].cmd_name) == 0)
 				{
@@ -346,7 +349,8 @@ int bb_handler_thread_main(int argc, char *argv[]){
 
 						orb_publish(ORB_ID(star_image_metadata), image_metadata_pub_fd, &metadata);
 
-						bb_debug(sprintf("Sender data til star_image_metadata topic. Filnavn: %s\n\n", metadata.file_name));
+						sprintf(dbg_str, "Sender data til star_image_metadata topic. Filnavn: %s\n\n", metadata.file_name);
+						bb_debug(dbg_str);
 
 					}else{
 						/** not so good :( */
@@ -358,7 +362,7 @@ int bb_handler_thread_main(int argc, char *argv[]){
 					break;
 
 				case S_GETPOS:
-					send_len = sprintf(send_buffer, "%f %f %f\n",
+					send_len = sprintf(send_buffer, "%u %u %u\n",
 							gps_s.lat,					//< uint32_t
 							gps_s.lon,					//< uint32_t
 							gps_s.alt);					//< uint32_t
@@ -474,7 +478,8 @@ int bb_handler_thread_main(int argc, char *argv[]){
 							if(param_2 > BURST_MAX)
 								param_2 = BURST_MAX;
 
-							strcat(send_str, sprintf("%d", param_2));
+							sprintf(dbg_str, "%d", param_2);
+							strcat(send_str, dbg_str);
 							strcat(send_str, "\n");
 							break;
 						case 3:
@@ -496,7 +501,7 @@ int bb_handler_thread_main(int argc, char *argv[]){
 							break;
 					}
 
-					if(strlen(send_str) > 0)
+					if(strlen(send_str) > 0 && cap_wp_error == false)
 						bb_send_uart_bytes((uint8_t *)send_str, (int)strlen(send_str));
 				}
 			}
@@ -555,16 +560,6 @@ int bb_handler_thread_main(int argc, char *argv[]){
 	thread_running = false;
 
 	exit(0);
-}
-
-char* get_command(internal_cmd_t c){
-	int num_c = sizeof(cmds)/sizeof(cmds[0]);
-	for(int i = 0; i < num_c; i++){
-		if(cmds[i].signal == c)
-			return cmds[i].cmd_name;
-	}
-	//Håper dette ikke skjer :P
-	return "error";
 }
 
 /**
