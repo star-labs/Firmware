@@ -170,14 +170,16 @@ int bb_handler_open_uart(int baud, const char *uart_name, struct termios *uart_c
 	return uart;
 }
 
-
+/**
+ * @brief
+ * */
 void bb_send_uart_bytes(uint8_t *ch, int length)
 {
 
 	write(uart, ch, (size_t)(sizeof(uint8_t) * length));
 }
 
-
+/** @brief deamon thread of the BeagleBoard Handler */
 int bb_handler_thread_main(int argc, char *argv[]){
 
 	int ch;
@@ -283,6 +285,7 @@ int bb_handler_thread_main(int argc, char *argv[]){
 	int send_len = 0;
 	char separator = '|';
 	char split_str = " ";
+	char send_str[80];
 
 	while (!thread_should_exit) {
 
@@ -461,6 +464,7 @@ int bb_handler_thread_main(int argc, char *argv[]){
 			}
 
 			/**
+			 *
 			 * Send data over uart om det er noe i bufferen
 			 */
 			send_len = strlen(send_buffer);
@@ -499,7 +503,7 @@ int bb_handler_thread_main(int argc, char *argv[]){
 					 *	Dette vil jo ikke funke. Hva om vi prøver følgende
 					 *
 					 *	Control BB camera
-					 *	param1| 0:image, 1:stop, 2:burst, 3:video,
+					 *	param1| 0:image, 1:video, 2:burst, 3:serie, 4:stop, 5:force
 					 *	param2| 0:one image, >0:number of images
 					 *	param3| stop after seconds
 					 *	param4| image per second, seconds per image if negative
@@ -516,17 +520,59 @@ int bb_handler_thread_main(int argc, char *argv[]){
 					bb_debug("NOT IMPLEMENTED: VEHICLE_CMD_DO_CONTROL_VIDEO\n\n");
 
 					int valg = (int) vehicle_s.param1;
+					int param_2 = (int) vehicle_s.param2;
+					int param_3 = (int) vehicle_s.param3;
+
 					bool cap_wp_error = false;
 
 					if(valg < 0 || valg > 5){
 						cap_wp_error = true;
 					}
+					switch (valg){
+						case 0:
+							strcpy(send_str, get_command(S_IMAGE));
+							strcat(send_str, "\n");
+							break;
+						case 1:
+							strcpy(send_str, get_command(S_VIDEO));
+							strcat(send_str, "\n");
+							break;
+						case 2:
+							strcpy(send_str, get_command(S_BURST));
+							strcat(send_str, " ");
 
+							//sanitize param_2
+							if(param_2 < 0)
+								param_2 = 1;
 
+							if(param_2 > BURST_MAX)
+								param_2 = BURST_MAX;
 
+							strcat(send_str, sprintf("%d", param_2));
+							strcat(send_str, "\n");
+							break;
+						case 3:
+							strcpy(send_str, get_command(S_SERIE));
+
+							strcat(send_str, "\n");
+							break;
+						case 4:
+							strcpy(send_str, get_command(S_STOP));
+							strcat(send_str, "\n");
+							break;
+						case 5:
+							strcpy(send_str, get_command(S_FORCE));
+							strcat(send_str, "\n");
+							break;
+						default:
+							strcpy(send_str, "\0");
+							break;
+					}
+
+					if(strlen(send_str) > 0)
+						bb_send_uart_bytes((uint8_t *)send_str, (int)strlen(send_str));
 
 				}
-
 			}
 
 
@@ -551,7 +597,7 @@ int bb_handler_thread_main(int argc, char *argv[]){
 
 
 				orb_copy(ORB_ID(manual_control_setpoint), mc_sub_fd, &mc_s);
-				char send_str[80];
+
 				if(mc_s.aux3 > 0 && !is_trigged){
 
 					for(int q = 0; q < n_cmds; q++){
@@ -599,6 +645,16 @@ int bb_handler_thread_main(int argc, char *argv[]){
 	thread_running = false;
 
 	exit(0);
+}
+
+char* get_command(internal_cmd_t c){
+	int num_c = sizeof(cmds)/sizeof(cmds[0]);
+	for(int i = 0; i < num_c; i++){
+		if(cmds[i].signal == c)
+			return cmds[i].cmd_name;
+	}
+	//Håper dette ikke skjer :P
+	return "error";
 }
 
 /**
@@ -688,3 +744,16 @@ void usage()
 
 
 /*EOF*/
+
+/*! @mainpage Doxygen documentation for the
+ *
+ * @section Introduction
+ *
+ * The bb_handler is the interface to BeagleBoard inside PX4
+ *
+ * @section install_sec Installation
+ *
+ * @subsection step1 Step 1: Opening the box
+ *
+ * etc...
+ */
