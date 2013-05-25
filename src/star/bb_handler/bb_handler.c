@@ -26,7 +26,6 @@
  *
  */
 
-
 #include "bb_handler.h"
 #include <nuttx/config.h>
 #include <unistd.h>
@@ -64,30 +63,12 @@ char read_buffer_local[BUFFER_SIZE] = "\0";
 char send_buffer[BUFFER_SIZE] = "\0";
 char tokens[8][32] = {'\0'};
 
-
-
 __EXPORT int bb_handler_main(int argc, char *argv[]);
 int bb_handler_thread_main(int argc, char *argv[]);
 void usage(void);
 
 void bb_send_uart_bytes(uint8_t *ch, int length);
 int bb_handler_open_uart(int baud, const char *uart_name, struct termios *uart_config_original, bool *is_usb);
-
-/*
-///QUERY Handlers..
-//Enn så lenge....
-void h_getall();
-void h_gettime();
-void h_getpos();
-void h_getatt();
-void h_gettemp();
-void h_getlocalpos();
-void h_getgpsraw();
-void h_ok();
-void h_busy();
-*/
-
-
 
 int bb_handler_open_uart(int baud, const char *uart_name, struct termios *uart_config_original, bool *is_usb)
 {
@@ -155,7 +136,6 @@ int bb_handler_open_uart(int baud, const char *uart_name, struct termios *uart_c
 			return -1;
 		}
 
-
 		if ((termios_state = tcsetattr(uart, TCSANOW, &uart_config)) < 0) {
 			fprintf(stderr, "[bb_handler] ERROR setting baudrate / termios config for %s (tcsetattr)\n", uart_name);
 			close(uart);
@@ -170,14 +150,16 @@ int bb_handler_open_uart(int baud, const char *uart_name, struct termios *uart_c
 	return uart;
 }
 
-
+/**
+ * @brief calls write on uart
+ * */
 void bb_send_uart_bytes(uint8_t *ch, int length)
 {
 
 	write(uart, ch, (size_t)(sizeof(uint8_t) * length));
 }
 
-
+/** @brief deamon thread of the BeagleBoard Handler */
 int bb_handler_thread_main(int argc, char *argv[]){
 
 	int ch;
@@ -186,11 +168,9 @@ int bb_handler_thread_main(int argc, char *argv[]){
 
 	char *tp;
 
-
 	/* work around some stupidity in task_create's argv handling */
 	argc -= 2;
 	argv += 2;
-
 
 	while ((ch = getopt(argc, argv, "b:d:eo")) != EOF) {
 		switch (ch) {
@@ -216,14 +196,10 @@ int bb_handler_thread_main(int argc, char *argv[]){
 	/* print welcome text */
 	warnx("\nBB Handler v1.0/a serial interface starting...");
 
-
-
-
 	/* advertise star_image_metadata topic */
 	struct star_image_metadata_s metadata;
 	memset(&metadata, 0, sizeof(metadata));
 	int image_metadata_pub_fd = orb_advertise(ORB_ID(star_image_metadata), &metadata);
-
 
 	/* default values for arguments */
 	uart = bb_handler_open_uart(baudrate, device_name, &uart_config_original, &usb_uart);
@@ -233,7 +209,6 @@ int bb_handler_thread_main(int argc, char *argv[]){
 	}
 	thread_running = true;
 
-
 	int com_sub_fd = orb_subscribe(ORB_ID(vehicle_command));
 	orb_set_interval(com_sub_fd, 1000);
 	struct vehicle_command_s vehicle_s;
@@ -241,10 +216,6 @@ int bb_handler_thread_main(int argc, char *argv[]){
 	int sensor_sub_fd = orb_subscribe(ORB_ID(sensor_combined));
 	orb_set_interval(sensor_sub_fd, 1000);
 	struct sensor_combined_s sensors_s;
-
-	int rc_sub_fd = orb_subscribe(ORB_ID(rc_channels));
-	orb_set_interval(rc_sub_fd, 500);
-	struct rc_channels_s rc_s;
 
 	int mc_sub_fd = orb_subscribe(ORB_ID(manual_control_setpoint));
 	orb_set_interval(mc_sub_fd, 500);
@@ -263,12 +234,9 @@ int bb_handler_thread_main(int argc, char *argv[]){
 	orb_set_interval(gps_sub_fd, 500);
 	struct vehicle_gps_position_s gps_s;
 
-
-
 	struct pollfd fds[] = {
 			{ .fd = com_sub_fd,   				.events = POLLIN },
 			{ .fd = sensor_sub_fd,  			.events = POLLIN },
-			{ .fd = rc_sub_fd,  				.events = POLLIN },
 			{ .fd = mc_sub_fd,  				.events = POLLIN },
 			{ .fd = global_position_sub_fd,  	.events = POLLIN },
 			{ .fd = vehicle_attitude_sub_fd,  	.events = POLLIN },
@@ -277,12 +245,12 @@ int bb_handler_thread_main(int argc, char *argv[]){
 
 	unsigned int num_fds = sizeof(fds) / sizeof(fds[0]);
 
-
 	bool is_trigged = false;
 	internal_query_t selected = S_NA;
 	int send_len = 0;
 	char separator = '|';
 	char split_str = " ";
+	char send_str[80];
 
 	while (!thread_should_exit) {
 
@@ -305,14 +273,10 @@ int bb_handler_thread_main(int argc, char *argv[]){
 			strcat(read_buffer_local, read_buffer);
 		}
 
-
-
 		if(strchr(read_buffer_local, (int)separator) != NULL){
 			//Hvis vi ikke har håndtert siste komando fra BB, så bare fortsett...
 
-			////SKRIV OM DETTE TIL HELLER Å BYGGE OPP read_buffer_local SLIK AT DEN HÅNDTERES OM VI MOTTAR \n SYMBOL....
-
-
+			/// TODO: SKRIV OM DETTE TIL HELLER Å BYGGE OPP read_buffer_local SLIK AT DEN HÅNDTERES OM VI MOTTAR \n SYMBOL....
 
 			tp = strtok(read_buffer_local, split_str);
 			int t_count = 0;
@@ -322,15 +286,12 @@ int bb_handler_thread_main(int argc, char *argv[]){
 				tp = strtok (NULL, split_str);
 			}
 
-
-
 			size_t newline_pos = strcspn(tokens[0], "|");
 
 			/**
 			 * "Reparerer" tokens[0] -- strcspn returnerer lengden av strengen om ikke \n blir funnet,
 			 *  vi kan derfor trygt alltid overskrive denne verdien med '\0'
 			 */
-
 			tokens[0][ (int)newline_pos ] = '\0';
 
 			for(int i = 0; i < n_query; i++){
@@ -346,7 +307,7 @@ int bb_handler_thread_main(int argc, char *argv[]){
 
 			switch(selected){
 				case S_GETALL:
-					send_len = sprintf(send_buffer, "%llu %llu %llu %04.15f %u %u %u %04.15f %04.15f %04.15f\n", //endres !!!!!!!!!!!!!!
+					send_len = sprintf(send_buffer, "%llu %llu %llu %04.15f %u %u %u %04.15f %04.15f %04.15f\n",
 										gps_s.time_gps_usec, 		//< uint64_t
 										gps_s.timestamp_position,	//< uint64_t
 										va_s.timestamp,				//< uint64_t
@@ -357,7 +318,6 @@ int bb_handler_thread_main(int argc, char *argv[]){
 										va_s.roll,					//< float
 										va_s.pitch,					//< float
 										va_s.yaw);					//< float
-
 					break;
 
 				case S_GETTIME:
@@ -365,9 +325,7 @@ int bb_handler_thread_main(int argc, char *argv[]){
 					break;
 
 				case S_OK:
-					/*
-					 * DETTE BØR FLYTTES VEKK HERFRA....
-					 */
+					/** TODO: DETTE BØR FLYTTES VEKK HERFRA.... */
 
 					//tokens[0]; //OK MELDING
 					//tokens[1]; //filnavn
@@ -375,7 +333,6 @@ int bb_handler_thread_main(int argc, char *argv[]){
 					/** vi vet at vi kun får første parameter så vi tipper at dette er alltid ok */
 					if(tokens[1] != NULL)
 					{
-
 						size_t special_pos = strcspn(tokens[1], "|");
 
 						/**
@@ -387,24 +344,17 @@ int bb_handler_thread_main(int argc, char *argv[]){
 
 						strcpy(metadata.file_name, tokens[1]);
 
-
 						orb_publish(ORB_ID(star_image_metadata), image_metadata_pub_fd, &metadata);
 
 						bb_debug(sprintf("Sender data til star_image_metadata topic. Filnavn: %s\n\n", metadata.file_name));
 
-
-
 					}else{
 						/** not so good :( */
 						bb_debug("Mottok ikke Filnavn\n\n");
-
-
 					}
 
 					/** This command has no response! */
 					send_buffer[0] = '\0';
-
-
 					break;
 
 				case S_GETPOS:
@@ -447,20 +397,16 @@ int bb_handler_thread_main(int argc, char *argv[]){
 
 							gps_s.time_gps_usec,
 							gps_s.satellites_visible);
-
 					break;
-
 				case S_NA:
 				default:
-
 					bb_debug("Ukjent komando\n\n");
-
 					//send_len = sprintf(send_buffer, "Feil eller ugyldig komando\n");
-
 					break;
 			}
 
 			/**
+			 *
 			 * Send data over uart om det er noe i bufferen
 			 */
 			send_len = strlen(send_buffer);
@@ -478,80 +424,92 @@ int bb_handler_thread_main(int argc, char *argv[]){
 		if(poll_ret == 0){
 
 		}else if(poll_ret < 0){
-			/* Vurder å legg inn en sperre mot flooding av consol */
+			/* Vurder å legg inn en sperre mot flooding av konsoll */
 			fprintf(stderr, "IT DOES NOT MAKE SENSE - Har du glemt A starte uORB?\n");
 			fflush(stderr);
 		}else{
 			if (fds[0].revents & POLLIN){
 
-
 				orb_copy(ORB_ID(vehicle_command), com_sub_fd, &vehicle_s);
 
+				/*
+				 * Control BB camera
+				 *	param1| 0:image, 1:video, 2:burst, 3:serie, 4:stop, 5:force
+				 *	param2| 0:one image, >0:number of images
+				 *	param3| NOT IN USE stop after seconds
+				 *	param4| NOT IN USE image per second, seconds per image if negative
+				 *	param5| NOT IN USE
+				 *	param6| NOT IN USE
+				 *	param7| NOT IN USE
+				 */
 				if (vehicle_s.command == VEHICLE_CMD_DO_CONTROL_VIDEO){
-
-					/* 	 Control onboard camera system.
-					 * | Camera ID (-1 for all)
-					 * | Transmission: 0: disabled, 1: enabled compressed, 2: enabled raw
-					 * | Transmission mode: 0: video stream, >0: single images every n seconds (decimal)
-					 * | Recording: 0: disabled, 1: enabled compressed, 2: enabled raw
-					 * | Empty| Empty| Empty|
-					 *
-					 *	Dette vil jo ikke funke. Hva om vi prøver følgende
-					 *
-					 *	Control BB camera
-					 *	param1| 0:image, 1:stop, 2:burst, 3:video,
-					 *	param2| 0:one image, >0:number of images
-					 *	param3| stop after seconds
-					 *	param4| image per second, seconds per image if negative
-					 *	param5| NOT IN USE
-					 *	param6| NOT IN USE
-					 *	param7| NOT IN USE
-					 *
-					 *	============================
-					 *
-					 *	Param1
-					 *
-					 */
 
 					bb_debug("NOT IMPLEMENTED: VEHICLE_CMD_DO_CONTROL_VIDEO\n\n");
 
 					int valg = (int) vehicle_s.param1;
+					int param_2 = (int) vehicle_s.param2;
+
 					bool cap_wp_error = false;
 
 					if(valg < 0 || valg > 5){
 						cap_wp_error = true;
 					}
+					switch (valg){
+						case 0:
+							strcpy(send_str, get_command(S_IMAGE));
+							strcat(send_str, "\n");
+							break;
+						case 1:
+							strcpy(send_str, get_command(S_VIDEO));
+							strcat(send_str, "\n");
+							break;
+						case 2:
+							strcpy(send_str, get_command(S_BURST));
+							strcat(send_str, " ");
 
+							//sanitize param_2
+							if(param_2 < 0)
+								param_2 = 1;
 
+							if(param_2 > BURST_MAX)
+								param_2 = BURST_MAX;
 
+							strcat(send_str, sprintf("%d", param_2));
+							strcat(send_str, "\n");
+							break;
+						case 3:
+							strcpy(send_str, get_command(S_SERIE));
 
+							strcat(send_str, "\n");
+							break;
+						case 4:
+							strcpy(send_str, get_command(S_STOP));
+							strcat(send_str, "\n");
+							break;
+						case 5:
+							strcpy(send_str, get_command(S_FORCE));
+							strcat(send_str, "\n");
+							break;
+						default:
+							strcpy(send_str, "\0");
+							cap_wp_error = true;
+							break;
+					}
+
+					if(strlen(send_str) > 0)
+						bb_send_uart_bytes((uint8_t *)send_str, (int)strlen(send_str));
 				}
-
 			}
 
 
 			if (fds[1].revents & POLLIN){
 				orb_copy(ORB_ID(sensor_combined), sensor_sub_fd, &sensors_s);
 			}
-/*
+
 			if (fds[2].revents & POLLIN){
 
-				orb_copy(ORB_ID(rc_channels), rc_sub_fd, &rc_s);
-
-				if(rc_s.chan[rc_s.function[AUX_3]].scaled > 0)
-				{
-					bb_send_uart_bytes(cmds[0], strlen(cmds[0]));
-					bb_debug("Ta(r) bilde RC");
-				}
-
-
-			}
-*/
-			if (fds[3].revents & POLLIN){
-
-
 				orb_copy(ORB_ID(manual_control_setpoint), mc_sub_fd, &mc_s);
-				char send_str[80];
+
 				if(mc_s.aux3 > 0 && !is_trigged){
 
 					for(int q = 0; q < n_cmds; q++){
@@ -565,21 +523,19 @@ int bb_handler_thread_main(int argc, char *argv[]){
 						}
 					}
 
-
 					bb_debug("Ta(r) bilde MC\n");
 					is_trigged = true;
-
 				}
 
 				if(mc_s.aux3 < 0)
 					is_trigged = false;
 			}
 
-			if (fds[4].revents & POLLIN){
+			if (fds[3].revents & POLLIN){
 				//GLOBAL POSTITION
 				orb_copy(ORB_ID(vehicle_global_position), global_position_sub_fd, &vgp_s);
 			}
-			if (fds[5].revents & POLLIN){
+			if (fds[4].revents & POLLIN){
 				//vehicle_attitude
 				orb_copy(ORB_ID(vehicle_attitude), vehicle_attitude_sub_fd, &va_s);
 			}
@@ -599,6 +555,16 @@ int bb_handler_thread_main(int argc, char *argv[]){
 	thread_running = false;
 
 	exit(0);
+}
+
+char* get_command(internal_cmd_t c){
+	int num_c = sizeof(cmds)/sizeof(cmds[0]);
+	for(int i = 0; i < num_c; i++){
+		if(cmds[i].signal == c)
+			return cmds[i].cmd_name;
+	}
+	//Håper dette ikke skjer :P
+	return "error";
 }
 
 /**
@@ -688,3 +654,16 @@ void usage()
 
 
 /*EOF*/
+
+/*! @mainpage Doxygen documentation for the
+ *
+ * @section Introduction
+ *
+ * The bb_handler is the interface to BeagleBoard inside PX4
+ *
+ * @section install_sec Installation
+ *
+ * @subsection step1 Step 1: Opening the box
+ *
+ * etc...
+ */

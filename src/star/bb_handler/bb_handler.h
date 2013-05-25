@@ -42,6 +42,7 @@
 #define NOT_OK 1
 #define BUFFER_SIZE 200
 #define STAR_DEBUG_FLAG 0
+#define BURST_MAX 100
 
 /** @brief Egen type for tilgjenlige kommandoer */
 typedef enum {
