@@ -70,20 +70,6 @@ void usage(void);
 void bb_send_uart_bytes(uint8_t *ch, int length);
 int bb_handler_open_uart(int baud, const char *uart_name, struct termios *uart_config_original, bool *is_usb);
 
-/*
-///QUERY Handlers..
-//Enn så lenge....
-void h_getall();
-void h_gettime();
-void h_getpos();
-void h_getatt();
-void h_gettemp();
-void h_getlocalpos();
-void h_getgpsraw();
-void h_ok();
-void h_busy();
-*/
-
 int bb_handler_open_uart(int baud, const char *uart_name, struct termios *uart_config_original, bool *is_usb)
 {
 	/* process baud rate */
@@ -165,7 +151,7 @@ int bb_handler_open_uart(int baud, const char *uart_name, struct termios *uart_c
 }
 
 /**
- * @brief
+ * @brief calls write on uart
  * */
 void bb_send_uart_bytes(uint8_t *ch, int length)
 {
@@ -231,10 +217,6 @@ int bb_handler_thread_main(int argc, char *argv[]){
 	orb_set_interval(sensor_sub_fd, 1000);
 	struct sensor_combined_s sensors_s;
 
-	int rc_sub_fd = orb_subscribe(ORB_ID(rc_channels));
-	orb_set_interval(rc_sub_fd, 500);
-	struct rc_channels_s rc_s;
-
 	int mc_sub_fd = orb_subscribe(ORB_ID(manual_control_setpoint));
 	orb_set_interval(mc_sub_fd, 500);
 	struct manual_control_setpoint_s mc_s;
@@ -255,7 +237,6 @@ int bb_handler_thread_main(int argc, char *argv[]){
 	struct pollfd fds[] = {
 			{ .fd = com_sub_fd,   				.events = POLLIN },
 			{ .fd = sensor_sub_fd,  			.events = POLLIN },
-			{ .fd = rc_sub_fd,  				.events = POLLIN },
 			{ .fd = mc_sub_fd,  				.events = POLLIN },
 			{ .fd = global_position_sub_fd,  	.events = POLLIN },
 			{ .fd = vehicle_attitude_sub_fd,  	.events = POLLIN },
@@ -295,7 +276,7 @@ int bb_handler_thread_main(int argc, char *argv[]){
 		if(strchr(read_buffer_local, (int)separator) != NULL){
 			//Hvis vi ikke har håndtert siste komando fra BB, så bare fortsett...
 
-			////SKRIV OM DETTE TIL HELLER Å BYGGE OPP read_buffer_local SLIK AT DEN HÅNDTERES OM VI MOTTAR \n SYMBOL....
+			/// TODO: SKRIV OM DETTE TIL HELLER Å BYGGE OPP read_buffer_local SLIK AT DEN HÅNDTERES OM VI MOTTAR \n SYMBOL....
 
 			tp = strtok(read_buffer_local, split_str);
 			int t_count = 0;
@@ -311,7 +292,6 @@ int bb_handler_thread_main(int argc, char *argv[]){
 			 * "Reparerer" tokens[0] -- strcspn returnerer lengden av strengen om ikke \n blir funnet,
 			 *  vi kan derfor trygt alltid overskrive denne verdien med '\0'
 			 */
-
 			tokens[0][ (int)newline_pos ] = '\0';
 
 			for(int i = 0; i < n_query; i++){
@@ -528,19 +508,8 @@ int bb_handler_thread_main(int argc, char *argv[]){
 			if (fds[1].revents & POLLIN){
 				orb_copy(ORB_ID(sensor_combined), sensor_sub_fd, &sensors_s);
 			}
-/*
+
 			if (fds[2].revents & POLLIN){
-
-				orb_copy(ORB_ID(rc_channels), rc_sub_fd, &rc_s);
-
-				if(rc_s.chan[rc_s.function[AUX_3]].scaled > 0)
-				{
-					bb_send_uart_bytes(cmds[0], strlen(cmds[0]));
-					bb_debug("Ta(r) bilde RC");
-				}
-			}
-*/
-			if (fds[3].revents & POLLIN){
 
 				orb_copy(ORB_ID(manual_control_setpoint), mc_sub_fd, &mc_s);
 
@@ -565,11 +534,11 @@ int bb_handler_thread_main(int argc, char *argv[]){
 					is_trigged = false;
 			}
 
-			if (fds[4].revents & POLLIN){
+			if (fds[3].revents & POLLIN){
 				//GLOBAL POSTITION
 				orb_copy(ORB_ID(vehicle_global_position), global_position_sub_fd, &vgp_s);
 			}
-			if (fds[5].revents & POLLIN){
+			if (fds[4].revents & POLLIN){
 				//vehicle_attitude
 				orb_copy(ORB_ID(vehicle_attitude), vehicle_attitude_sub_fd, &va_s);
 			}
