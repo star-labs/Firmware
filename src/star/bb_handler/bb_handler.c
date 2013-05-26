@@ -311,14 +311,18 @@ int bb_handler_thread_main(int argc, char *argv[]){
 
 			switch(selected){
 				case S_GETALL:
-					send_len = sprintf(send_buffer, "%llu %llu %llu %04.15f %u %u %u %04.15f %04.15f %04.15f\n",
+					send_len = sprintf(send_buffer, "%llu %llu %llu %04.15f %d %d %d %04.15f %04.15f %04.15f\n",
 										gps_s.time_gps_usec, 		//< uint64_t
 										gps_s.timestamp_position,	//< uint64_t
+
 										va_s.timestamp,				//< uint64_t
+
 										gps_s.p_variance_m,			//< float
-										gps_s.lat,					//< uint32_t
-										gps_s.lon,					//< uint32_t
-										gps_s.alt,					//< uint32_t
+
+										gps_s.lat,					//< int32_t
+										gps_s.lon,					//< int32_t
+										gps_s.alt,					//< int32_t
+
 										va_s.roll,					//< float
 										va_s.pitch,					//< float
 										va_s.yaw);					//< float
@@ -363,10 +367,10 @@ int bb_handler_thread_main(int argc, char *argv[]){
 					break;
 
 				case S_GETPOS:
-					send_len = sprintf(send_buffer, "%u %u %u\n",
-							gps_s.lat,					//< uint32_t
-							gps_s.lon,					//< uint32_t
-							gps_s.alt);					//< uint32_t
+					send_len = sprintf(send_buffer, "%d %d %d\n",
+							gps_s.lat,					//< int32_t
+							gps_s.lon,					//< int32_t
+							gps_s.alt);					//< int32_t
 					break;
 
 				case S_GETATT:
