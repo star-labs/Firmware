@@ -44,6 +44,10 @@
 #define STAR_DEBUG_FLAG 0
 #define BURST_MAX 100
 
+//Globalt flagg for debug funksjon
+bool bb_debug_mode = false;
+
+
 /** @brief Egen type for tilgjenlige kommandoer */
 typedef enum {
 	S_IMAGE 	= 0,
@@ -81,8 +85,6 @@ struct query_s {
 	int (*callback)(char* send_buffer); /** < returner lengde av string i buffer (husk å sjekk om den er lengre en makroen for buffer) */
 };
 
-
-
 /* BB komunikasjons variable */
 
 /** @brief Kommandoer som BeagleBoard Capture tolker */
@@ -116,10 +118,21 @@ const int n_cmds = sizeof(cmds) / sizeof(cmds[0]);
 /** @brief Intern debuggings funksjon for bb_handler, avhenger av STAR_DEBUG_FLAG */
 void bb_debug(char* debug_str)
 {
-	if(STAR_DEBUG_FLAG)
+	//if(STAR_DEBUG_FLAG)
+	if(bb_debug_mode == true)
 	{
 		fprintf(stderr, "[bb_handler] %s", debug_str);
 		fflush(stderr);
 	}
+}
+
+
+const char* get_command(internal_cmd_t c){
+	for(int i = 0; i < n_cmds; i++){
+		if(cmds[i].signal == c)
+			return cmds[i].cmd_name;
+	}
+	//Håper dette ikke skjer :P
+	return "error";
 }
 
