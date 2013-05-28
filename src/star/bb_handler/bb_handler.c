@@ -613,7 +613,7 @@ int bb_handler_main(int argc, char *argv[]){
 		bb_task = task_spawn("bb_responder",
 				SCHED_DEFAULT,
 				SCHED_PRIORITY_DEFAULT,
-				3072,
+				4096,
 				bb_handler_thread_main,
 				(const char **)argv);
 
