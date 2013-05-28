@@ -392,12 +392,12 @@ int bb_handler_thread_main(int argc, char *argv[]){
 					break;
 
 				case S_GETTEMP:
-					send_len = sprintf(send_buffer, "%f\n", sensors_s.baro_temp_celcius);
+					send_len = sprintf(send_buffer, "%04.15f\n", sensors_s.baro_temp_celcius);
 					break;
 
 				case S_GETLOCALPOS:
 				case S_GETGPSRAW:
-					send_len = sprintf(send_buffer, "%d %d %d %f %f %f %d %f %f %f %f %f %f %llu %u\n",
+					send_len = sprintf(send_buffer, "%d %d %d %04.15f %04.15f %04.15f %d %04.15f %04.15f %04.15f %04.15f %04.15f %04.15f %llu %u\n",
 							gps_s.lat,
 							gps_s.lon,
 							gps_s.alt,
@@ -418,6 +418,28 @@ int bb_handler_thread_main(int argc, char *argv[]){
 							gps_s.time_gps_usec,
 							gps_s.satellites_visible);
 					break;
+
+
+				case S_GETSENSORS:
+					send_len = sprintf(send_buffer, "%04.15f %04.15f %04.15f %04.15f %04.15f %04.15f %04.15f %04.15f %04.15f %04.15f %04.15f %04.15f %04.15f\n",
+							sensors_s.gyro_rad_s[0],
+							sensors_s.gyro_rad_s[1],
+							sensors_s.gyro_rad_s[2],
+
+							sensors_s.accelerometer_m_s2[0],
+							sensors_s.accelerometer_m_s2[1],
+							sensors_s.accelerometer_m_s2[2],
+
+							sensors_s.magnetometer_ga[0],
+							sensors_s.magnetometer_ga[1],
+							sensors_s.magnetometer_ga[2],
+
+							sensors_s.baro_pres_mbar,
+							sensors_s.baro_alt_meter,
+							sensors_s.baro_temp_celcius,
+							sensors_s.mcu_temp_celcius);
+					break;
+
 				case S_NA:
 				default:
 					bb_debug("Ukjent komando\n\n");

@@ -70,6 +70,7 @@ typedef enum {
 	S_OK 			= 7,
 	S_BUSY 			= 8,
 	S_GETALL 		= 9,
+	S_GETSENSORS	= 10,
 } internal_query_t;
 
 /** @brief */
@@ -107,6 +108,9 @@ const struct query_s querys[] = {
 	{.cmd_name = "getgpsraw", 	.signal = S_GETGPSRAW},
 	{.cmd_name = "ok", 			.signal = S_OK},
 	{.cmd_name = "busy", 		.signal = S_BUSY},
+	{.cmd_name = "getsensors", 	.signal = S_GETSENSORS},
+
+
 };
 
 /** @brief Antall querys for BB_handler */
