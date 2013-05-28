@@ -319,7 +319,9 @@ int bb_handler_thread_main(int argc, char *argv[]){
 
 			switch(selected){
 				case S_GETALL:
-					send_len = sprintf(send_buffer, "%llu %llu %llu %04.15f %d %d %d %04.15f %04.15f %04.15f\n",
+
+					/*Det er ukjente problemer med time_gps_usec */
+					send_len = sprintf(send_buffer, "%llu %llu %llu %04.15f %d %d %d %04.15f %04.15f %04.15f %04.15f\n",
 										gps_s.time_gps_usec, 		//< uint64_t
 										gps_s.timestamp_position,	//< uint64_t
 
@@ -333,20 +335,21 @@ int bb_handler_thread_main(int argc, char *argv[]){
 
 										va_s.roll,					//< float
 										va_s.pitch,					//< float
-										va_s.yaw);					//< float
+										va_s.yaw,					//< float
+										vgp_s.relative_alt);		//< float
 					break;
 
 				case S_GETTIME:
-					send_len = sprintf(send_buffer, "%llu\n", gps_s.time_gps_usec);
+					//send_len = sprintf(send_buffer, "%llu\n", gps_s.time_gps_usec);
+					send_len = sprintf(send_buffer, "%llu\n", vgp_s.time_gps_usec); //Benytter annen topic (mest for test)
 					break;
 
 				case S_OK:
-					/** TODO: DETTE BØR FLYTTES VEKK HERFRA.... */
 
 					//tokens[0]; //OK MELDING
 					//tokens[1]; //filnavn
 
-					/** vi vet at vi kun får første parameter så vi tipper at dette er alltid ok */
+					/* vi vet at vi kun får første parameter så vi tipper at dette er alltid ok */
 					if(tokens[1] != NULL)
 					{
 						size_t special_pos = strcspn(tokens[1], "|");
