@@ -49,6 +49,9 @@
 #include <poll.h>
 #include <stdbool.h>
 
+///TEMP
+//#include <mavlink/mavlink_log.h>
+
 volatile bool thread_should_exit = false;		/**< Daemon exit flag */
 static volatile bool thread_running = false;	/**< Daemon status flag */
 static int bb_task;								/**< Handle of daemon task / thread */
@@ -254,6 +257,11 @@ int bb_handler_thread_main(int argc, char *argv[]){
 	char split_str[] = " ";
 	char send_str[80];
 	char dbg_str[100];
+
+	//MAVLINK LOG - TEMP
+	//static int mavlink_fd;
+	//mavlink_fd = open(MAVLINK_LOG_DEVICE, 0);
+
 
 	while (!thread_should_exit) {
 
@@ -544,10 +552,15 @@ int bb_handler_thread_main(int argc, char *argv[]){
 			if (fds[3].revents & POLLIN){
 				//GLOBAL POSTITION
 				orb_copy(ORB_ID(vehicle_global_position), global_position_sub_fd, &vgp_s);
+
 			}
 			if (fds[4].revents & POLLIN){
 				//vehicle_attitude
 				orb_copy(ORB_ID(vehicle_attitude), vehicle_attitude_sub_fd, &va_s);
+			}
+			if(fds[5].revents & POLLIN){
+
+				orb_copy(ORB_ID(vehicle_gps_position), gps_sub_fd, &gps_s);
 			}
 			/* there could be more file descriptors here, in the form like:
 			 * if (fds[1..n].revents & POLLIN) {}
