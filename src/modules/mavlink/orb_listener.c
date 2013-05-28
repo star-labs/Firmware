@@ -688,8 +688,8 @@ l_star(const struct listener *l)
 				metadata.star_sys_id
 		);
 
-		////////LÅNER MESGID 253 :::::: OBS OBS::: DETTE ER MIDLERTIDIG!!!!
-		char str[60] = "Filnavn: ";
+		////////LÅNER MESGID 253 ::::::
+		char str[60] = "[BB_capture] Tatt bilde med filnavn: ";
 
 		strcat(str, metadata.file_name);
 
