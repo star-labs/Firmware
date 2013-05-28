@@ -322,7 +322,7 @@ int bb_handler_thread_main(int argc, char *argv[]){
 
 					/*Det er ukjente problemer med time_gps_usec */
 					send_len = sprintf(send_buffer, "%llu %llu %llu %04.15f %d %d %d %04.15f %04.15f %04.15f %04.15f\n",
-										gps_s.time_gps_usec, 		//< uint64_t
+										vgp_s.time_gps_usec, 		//< uint64_t
 										gps_s.timestamp_position,	//< uint64_t
 
 										va_s.timestamp,				//< uint64_t
