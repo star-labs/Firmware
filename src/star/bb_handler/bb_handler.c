@@ -191,6 +191,7 @@ int bb_handler_thread_main(int argc, char *argv[]){
 	argc -= 2;
 	argv += 2;
 
+	/* Parse command line options */
 	while ((ch = getopt(argc, argv, "b:d:x:eo")) != EOF) {
 		switch (ch) {
 		case 'b':
@@ -222,7 +223,7 @@ int bb_handler_thread_main(int argc, char *argv[]){
 	memset(&metadata, 0, sizeof(metadata));
 	int image_metadata_pub_fd = orb_advertise(ORB_ID(star_image_metadata), &metadata);
 
-	/* default values for arguments */
+	/* Attempt to open UART */
 	uart = bb_handler_open_uart(baudrate, device_name, &uart_config_original, &usb_uart);
 
 	if (uart < 0){
