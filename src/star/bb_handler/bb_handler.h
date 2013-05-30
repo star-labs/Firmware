@@ -39,16 +39,17 @@
 #include <stdio.h>
 
 
-#define NOT_OK 1
-#define BUFFER_SIZE 200
-#define STAR_DEBUG_FLAG 0
-#define BURST_MAX 100
+#define NOT_OK 1			/**< Makro for å komplimentere OK makroen fra NuttX */
+#define BUFFER_SIZE 200		/**< Makro størrelsen til inn og ut bufferene 		*/
+#define BURST_MAX 100		/**< Bestemmer max antall bilder det er tillatt å ta i burst-modus */
 
-//Globalt flagg for debug funksjon
+/**
+ * @brief Globalt flagg for debug funksjon. Kan settes via komandolinjedirektivet debugon/debugoff
+ */
 bool bb_debug_mode = false;
 
 
-/** @brief Egen type for tilgjenlige kommandoer */
+/** @brief Egen type for tilgjenlige kommandoer (til BB)*/
 typedef enum {
 	S_IMAGE 	= 0,
 	S_VIDEO 	= 1,
@@ -58,7 +59,7 @@ typedef enum {
 	S_FORCE 	= 5,
 } internal_cmd_t;
 
-/** @brief Egen type for tilgjenlige querrys */
+/** @brief Egen type for tilgjenlige querrys (fra BB) */
 typedef enum {
 	S_NA 			= 0,
 	S_GETTIME 		= 1,
@@ -73,18 +74,18 @@ typedef enum {
 	S_GETSENSORS	= 10,
 } internal_query_t;
 
-/** @brief */
+/** @brief Strukt for å koble komandoene vi sender til BB mot interne navn*/
 struct cmds_s {
 	char cmd_name[20];
 	internal_cmd_t signal;
 };
 
-/** @brief */
+/** @brief Strukt for å koble komandoene vi mottar fra BB mot interne navn */
 struct query_s {
 	char cmd_name[20];
 	internal_query_t signal;
-	int (*callback)(char* send_buffer); /** < returner lengde av string i buffer (husk å sjekk om den er lengre en makroen for buffer) */
 };
+
 
 /* BB komunikasjons variable */
 
@@ -119,10 +120,13 @@ const int n_query = sizeof(querys) / sizeof(querys[0]);
 /** @brief Antall kommandoer for BB Capture */
 const int n_cmds = sizeof(cmds) / sizeof(cmds[0]);
 
-/** @brief Intern debuggings funksjon for bb_handler, avhenger av STAR_DEBUG_FLAG */
+/**
+ * @brief Intern debuggings funksjon for bb_handler, avhenger av bb_debug_mode.
+ * @param char* med debug tekst
+ *
+ */
 void bb_debug(char* debug_str)
 {
-	//if(STAR_DEBUG_FLAG)
 	if(bb_debug_mode == true)
 	{
 		fprintf(stderr, "[bb_handler] %s", debug_str);
@@ -130,13 +134,18 @@ void bb_debug(char* debug_str)
 	}
 }
 
-
-const char* get_command(internal_cmd_t c){
+/**
+ * @brief søkefunksjon for å hente cmd_name fra et gitt signal.
+ * @param internal_cmd_t
+ */
+const char* get_command(internal_cmd_t c)
+{
 	for(int i = 0; i < n_cmds; i++){
 		if(cmds[i].signal == c)
 			return cmds[i].cmd_name;
 	}
-	//Håper dette ikke skjer :P
+
+	//Dette "kan ikke" skje, i såfall er det ikke samsvar mellom internal_cmd_t typen og cmds strukten.
 	return "error";
 }
 

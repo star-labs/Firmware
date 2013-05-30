@@ -49,12 +49,16 @@
 #include <poll.h>
 #include <stdbool.h>
 
-///TEMP
+//#if 0
 //#include <mavlink/mavlink_log.h>
+//static int mavlink_fd;
+//mavlink_fd = open(MAVLINK_LOG_DEVICE, 0);
+//#endif
 
-volatile bool thread_should_exit = false;		/**< Daemon exit flag */
-static volatile bool thread_running = false;	/**< Daemon status flag */
-static int bb_task;								/**< Handle of daemon task / thread */
+
+volatile bool thread_should_exit = false;		/**< @brief Daemon exit flag */
+static volatile bool thread_running = false;	/**< @brief Daemon status flag */
+static int bb_task;								/**< @brief Handle of daemon task / thread */
 
 /* protocol interface */
 static int uart;
@@ -67,11 +71,19 @@ char read_buffer_local[BUFFER_SIZE] = "\0";
 char send_buffer[BUFFER_SIZE] = "\0";
 char tokens[8][32] = {"\0"};
 
+/* main entry point for bb_handler, exported to NuttX */
 __EXPORT int bb_handler_main(int argc, char *argv[]);
+
+/* main entry point for bb_handler thread, this is the actual program */
 int bb_handler_thread_main(int argc, char *argv[]);
+
+/* Prints usage */
 void usage(void);
 
+/* Wrapper for uart-writing */
 void bb_send_uart_bytes(uint8_t *ch, int length);
+
+/* Opens UART and saves the old configuration of the port for restoring when the program exits */
 int bb_handler_open_uart(int baud, const char *uart_name, struct termios *uart_config_original, bool *is_usb);
 
 int bb_handler_open_uart(int baud, const char *uart_name, struct termios *uart_config_original, bool *is_usb)
@@ -108,9 +120,9 @@ int bb_handler_open_uart(int baud, const char *uart_name, struct termios *uart_c
 		return -EINVAL;
 	}
 
-	/* open uart */
+	/* Open uart */
 	printf("[bb_handler] UART is %s, baudrate is %d\n", uart_name, baud);
-	uart = open(uart_name, O_RDWR | O_NOCTTY | O_NONBLOCK); //skulle man byttet flagg til O_NDELAY
+	uart = open(uart_name, O_RDWR | O_NOCTTY | O_NONBLOCK);
 
 	/* Try to set baud rate */
 	struct termios uart_config;
@@ -148,14 +160,13 @@ int bb_handler_open_uart(int baud, const char *uart_name, struct termios *uart_c
 
 	} else {
 		*is_usb = true;
-		//fprintf(stderr, "[bb_handler] Sorry; kan ikke bruke usb!!\n");
 	}
 
 	return uart;
 }
 
 /**
- * @brief calls write on uart
+ * @brief calls write on uart. Call bb_handler_open_uart first.
  * */
 void bb_send_uart_bytes(uint8_t *ch, int length)
 {
@@ -167,7 +178,11 @@ void bb_send_uart_bytes(uint8_t *ch, int length)
 int bb_handler_thread_main(int argc, char *argv[]){
 
 	int ch;
+
+	/** @brief Default uart device if not overwritten by args */
 	char *device_name = "/dev/ttyS1";
+
+	/** @brief Default uart baudrate if not overwritten by args */
 	baudrate = 57600;
 
 	char *tp;
@@ -193,12 +208,14 @@ int bb_handler_thread_main(int argc, char *argv[]){
 		}
 	}
 
+	/* struct to save old config of uart */
 	struct termios uart_config_original;
 
+	/* Flag to indicate that were usin usb for uart */
 	bool usb_uart;
 
 	/* print welcome text */
-	warnx("\nBB Handler v1.0/a serial interface starting...");
+	warnx("\nBB Handler v1.0/b serial interface starting...");
 
 	/* advertise star_image_metadata topic */
 	struct star_image_metadata_s metadata;
@@ -212,8 +229,13 @@ int bb_handler_thread_main(int argc, char *argv[]){
 		err(1, "could not open %s", device_name);
 	}
 
+	/* If we are here then the uart is avalable. Set thread running flag to true */
 	thread_running = true;
 
+
+	/*
+	 * Start subscribing to the different topics we need to extract relevant information
+	 */
 	int com_sub_fd = orb_subscribe(ORB_ID(vehicle_command));
 	orb_set_interval(com_sub_fd, 1000);
 	struct vehicle_command_s vehicle_s;
@@ -234,11 +256,14 @@ int bb_handler_thread_main(int argc, char *argv[]){
 	orb_set_interval(vehicle_attitude_sub_fd, 500);
 	struct vehicle_attitude_s va_s;
 
-	/** filedescriptor til å abbonere på GPS data*/
 	int gps_sub_fd = orb_subscribe(ORB_ID(vehicle_gps_position));
 	orb_set_interval(gps_sub_fd, 500);
 	struct vehicle_gps_position_s gps_s;
 
+
+	/*
+	 * Set poll file-descriptors and register poll event
+	 */
 	struct pollfd fds[] = {
 			{ .fd = com_sub_fd,   				.events = POLLIN },
 			{ .fd = sensor_sub_fd,  			.events = POLLIN },
@@ -248,47 +273,75 @@ int bb_handler_thread_main(int argc, char *argv[]){
 			{ .fd = gps_sub_fd,  				.events = POLLIN },
 	};
 
+	/* Calculate number of file descriptors */
 	unsigned int num_fds = sizeof(fds) / sizeof(fds[0]);
 
+	/** @brief flag indicating that the RC-Capture-Trigger button is "pressed" */
 	bool is_trigged = false;
+
+	/* Set default value for the selected command */
 	internal_query_t selected = S_NA;
+
+	/*
+	 * Variable used to hold the transmit-size of the send buffer
+	 */
 	int send_len = 0;
+
+	/*
+	 * Separator symbol for end-of-command (for bb_handler)
+	 */
 	char separator[] = "|";
+
+	/*
+	 * Split token for values
+	 */
 	char split_str[] = " ";
-	char send_str[80];
+
+	/*
+	 * Send buffer
+	 */
+	char send_str[BUFFER_SIZE];
+
+	/*
+	 * Debug string for (re)use in bb_debug
+	 */
 	char dbg_str[100];
 
-	//MAVLINK LOG - TEMP
-	//static int mavlink_fd;
-	//mavlink_fd = open(MAVLINK_LOG_DEVICE, 0);
 
-
+	/* START THE TREAD */
 	while (!thread_should_exit) {
 
+		/* do poll */
 		int poll_ret = poll(fds, num_fds, 1000);
 
+		/* Read UART */
 		int n_result = read(uart, read_buffer, (size_t) BUFFER_SIZE -1);
 
+		/* UART Read-buffer not-empty? */
 		if(n_result > 0)
 		{
-
+			/* Make the read_buffer safe */
 			read_buffer[n_result] = '\0';
 
+			/* Buffer overflow?? */
 			if(strlen(read_buffer) + strlen(read_buffer_local) > BUFFER_SIZE - 1)
 			{
+				/* Warn Buffer overflow */
 				bb_debug("Buffer owerflow\n\n");
+
+				/* Reset readbuffer */
 				read_buffer_local[0] = '\0';
 			}
 
-
+			/* Concatenate the readbuffer */
 			strcat(read_buffer_local, read_buffer);
 		}
 
-		if(strchr(read_buffer_local, (int)separator[0]) != NULL){
-			//Hvis vi ikke har håndtert siste komando fra BB, så bare fortsett...
+		/* Is there a EOL-symbol (separator) in the buffer? */
+		if(strchr(read_buffer_local, (int)separator[0]) != NULL)
+		{
 
-			/// TODO: SKRIV OM DETTE TIL HELLER Å BYGGE OPP read_buffer_local SLIK AT DEN HÅNDTERES OM VI MOTTAR \n SYMBOL....
-
+			/* Find all the tokens (based on split_str), and save them in tokens[] */
 			tp = strtok(read_buffer_local, split_str);
 			int t_count = 0;
 			while (tp != NULL)
@@ -299,12 +352,13 @@ int bb_handler_thread_main(int argc, char *argv[]){
 
 			size_t newline_pos = strcspn(tokens[0], "|");
 
-			/**
+			/*
 			 * "Reparerer" tokens[0] -- strcspn returnerer lengden av strengen om ikke \n blir funnet,
 			 *  vi kan derfor trygt alltid overskrive denne verdien med '\0'
 			 */
 			tokens[0][ (int)newline_pos ] = '\0';
 
+			/* Find the selected signal based on the recived cmd_name */
 			for(int i = 0; i < n_query; i++){
 
 				sprintf(dbg_str, "Buffer er: %s og Query som testes er: %s\n", tokens[0], querys[i].cmd_name);
@@ -317,10 +371,11 @@ int bb_handler_thread_main(int argc, char *argv[]){
 				}
 			}
 
+			/* Handle signal */
 			switch(selected){
-				case S_GETALL:
 
-					/*Det er ukjente problemer med time_gps_usec */
+				/* The common data used for GEO-referencing */
+				case S_GETALL:
 					send_len = sprintf(send_buffer, "%llu %llu %llu %04.15f %d %d %d %04.15f %04.15f %04.15f %04.15f\n",
 										vgp_s.time_gps_usec, 		//< uint64_t
 										gps_s.timestamp_position,	//< uint64_t
@@ -339,27 +394,32 @@ int bb_handler_thread_main(int argc, char *argv[]){
 										vgp_s.relative_alt);		//< float
 					break;
 
+				/* GPS-Time */
 				case S_GETTIME:
 					//send_len = sprintf(send_buffer, "%llu\n", gps_s.time_gps_usec);
-					send_len = sprintf(send_buffer, "%llu\n", vgp_s.time_gps_usec); //Benytter annen topic (mest for test)
+					send_len = sprintf(send_buffer, "%llu\n", vgp_s.time_gps_usec);
 					break;
 
+				/* Capture on BeagleBoard ok */
 				case S_OK:
 
-					//tokens[0]; //OK MELDING
-					//tokens[1]; //filnavn
+					/*
+					 * ---Mottar---
+					 * tokens[0]; //OK MELDING
+					 * tokens[1]; //filnavn
+					 */
 
-					/* vi vet at vi kun får første parameter så vi tipper at dette er alltid ok */
+					/* Vi vet at vi kun får første parameter så vi *tipper* at dette er alltid ok */
 					if(tokens[1] != NULL)
 					{
 						size_t special_pos = strcspn(tokens[1], "|");
 
-						/**
+						/*
 						 * "Reparerer" tokens[0] -- strcspn returnerer lengden av strengen om ikke \n blir funnet.
 						 *  vi kan derfor trygt alltid overskrive denne verdien med '\0'
 						 */
 
-						tokens[1][(int)special_pos] = '\0'; //NULL;//"\0";
+						tokens[1][(int)special_pos] = '\0';
 
 						strcpy(metadata.file_name, tokens[1]);
 
@@ -369,14 +429,15 @@ int bb_handler_thread_main(int argc, char *argv[]){
 						bb_debug(dbg_str);
 
 					}else{
-						/** not so good :( */
+						/* Hmm, vi mottok ikke filnanv, det var merkelig :-P (men ikke noe problem)*/
 						bb_debug("Mottok ikke Filnavn\n\n");
 					}
 
-					/** This command has no response! */
+					/* This command has no response! */
 					send_buffer[0] = '\0';
 					break;
 
+				/* GPS Position*/
 				case S_GETPOS:
 					send_len = sprintf(send_buffer, "%d %d %d\n",
 							gps_s.lat,					//< int32_t
@@ -384,6 +445,7 @@ int bb_handler_thread_main(int argc, char *argv[]){
 							gps_s.alt);					//< int32_t
 					break;
 
+				/* Estimated orientation */
 				case S_GETATT:
 					send_len = sprintf(send_buffer, "%04.15f %04.15f %04.15f\n",
 							va_s.roll,					//< float
@@ -391,10 +453,12 @@ int bb_handler_thread_main(int argc, char *argv[]){
 							va_s.yaw);					//< float
 					break;
 
+				/* Sensed temparature */
 				case S_GETTEMP:
 					send_len = sprintf(send_buffer, "%04.15f\n", sensors_s.baro_temp_celcius);
 					break;
 
+				/* Most off GPS-Topics data */
 				case S_GETLOCALPOS:
 				case S_GETGPSRAW:
 					send_len = sprintf(send_buffer, "%d %d %d %04.15f %04.15f %04.15f %d %04.15f %04.15f %04.15f %04.15f %04.15f %04.15f %llu %u\n",
@@ -419,7 +483,7 @@ int bb_handler_thread_main(int argc, char *argv[]){
 							gps_s.satellites_visible);
 					break;
 
-
+				/* All the sensor readings */
 				case S_GETSENSORS:
 					send_len = sprintf(send_buffer, "%04.15f %04.15f %04.15f %04.15f %04.15f %04.15f %04.15f %04.15f %04.15f %04.15f %04.15f %04.15f %04.15f\n",
 							sensors_s.gyro_rad_s[0],
@@ -440,6 +504,7 @@ int bb_handler_thread_main(int argc, char *argv[]){
 							sensors_s.mcu_temp_celcius);
 					break;
 
+				/* Default, do nothing */
 				case S_NA:
 				default:
 					bb_debug("Ukjent komando\n\n");
@@ -447,9 +512,8 @@ int bb_handler_thread_main(int argc, char *argv[]){
 					break;
 			}
 
-			/**
-			 *
-			 * Send data over uart om det er noe i bufferen
+			/*
+			 * Send data over uart if there is data in the send-buffer
 			 */
 			send_len = strlen(send_buffer);
 			if(send_len > 0)
@@ -457,21 +521,31 @@ int bb_handler_thread_main(int argc, char *argv[]){
 				bb_send_uart_bytes((uint8_t *)send_buffer, send_len);
 			}
 
-
+			/* Reset selected flag after handled command */
 			selected = S_NA;
+			/* Reset read buffer after handled command */
 			read_buffer_local[0] = '\0';
 		}
 
-
+		/* Is there any new poll data? */
 		if(poll_ret == 0){
 
-		}else if(poll_ret < 0){
+		}
+		/* Did anything go wrong requesting poll data? */
+		else if(poll_ret < 0){
+
 			/* Vurder å legg inn en sperre mot flooding av konsoll */
 			fprintf(stderr, "IT DOES NOT MAKE SENSE - Har du glemt A starte uORB?\n");
 			fflush(stderr);
-		}else{
+		}
+
+		/* There is new poll data! */
+		else{
+
+			/* vehicle_command -- Misson plan */
 			if (fds[0].revents & POLLIN){
 
+				/* There is new data, copy it to struct */
 				orb_copy(ORB_ID(vehicle_command), com_sub_fd, &vehicle_s);
 
 				/*
@@ -486,16 +560,21 @@ int bb_handler_thread_main(int argc, char *argv[]){
 				 */
 				if (vehicle_s.command == VEHICLE_CMD_DO_CONTROL_VIDEO){
 
-					bb_debug("NOT IMPLEMENTED: VEHICLE_CMD_DO_CONTROL_VIDEO\n\n");
+					bb_debug("CODE NOT TESTED!! -- VEHICLE_CMD_DO_CONTROL_VIDEO\n\n");
 
+					/* Cast param1 and param2 to integers */
 					int valg = (int) vehicle_s.param1;
 					int param_2 = (int) vehicle_s.param2;
 
+					/* Set error flag to false */
 					bool cap_wp_error = false;
 
+					/* Selected parameters not within bounds */
 					if(valg < 0 || valg > 5){
 						cap_wp_error = true;
 					}
+
+					/* Prepare send_str for transmission to BeagleBoard */
 					switch (valg){
 						case 0:
 							strcpy(send_str, get_command(S_IMAGE));
@@ -509,7 +588,7 @@ int bb_handler_thread_main(int argc, char *argv[]){
 							strcpy(send_str, get_command(S_BURST));
 							strcat(send_str, " ");
 
-							//sanitize param_2
+							/* sanitize param_2 */
 							if(param_2 < 0)
 								param_2 = 1;
 
@@ -539,22 +618,29 @@ int bb_handler_thread_main(int argc, char *argv[]){
 							break;
 					}
 
-					if(strlen(send_str) > 0 && cap_wp_error == false)
+					/* Data ok for transmission? If so; send */
+					if(strlen(send_str) > 0 && cap_wp_error == false){
 						bb_send_uart_bytes((uint8_t *)send_str, (int)strlen(send_str));
+					}
+
 				}
 			}
 
-
+			/* Update sensors struct */
 			if (fds[1].revents & POLLIN){
 				orb_copy(ORB_ID(sensor_combined), sensor_sub_fd, &sensors_s);
 			}
 
+			/* Check manual control */
 			if (fds[2].revents & POLLIN){
 
+				/* Update manual control struct */
 				orb_copy(ORB_ID(manual_control_setpoint), mc_sub_fd, &mc_s);
 
+				/* Is the switch on the RC-controller pressed? Should we send capture command? */
 				if(mc_s.aux3 > 0 && !is_trigged){
 
+					/*
 					for(int q = 0; q < n_cmds; q++){
 						if(cmds[q].signal == S_IMAGE){
 
@@ -565,34 +651,47 @@ int bb_handler_thread_main(int argc, char *argv[]){
 							break;
 						}
 					}
+					*/
+
+					strcpy(send_str, get_command(S_IMAGE));
+					strcat(send_str, "\n");
+					bb_send_uart_bytes((uint8_t *)send_str, (int)strlen(send_str));
+
 
 					bb_debug("Ta(r) bilde MC\n");
 					is_trigged = true;
 				}
 
+				/* Trigger Button released */
 				if(mc_s.aux3 < 0)
 					is_trigged = false;
 			}
 
+			/* GLOBAL POSTITION */
 			if (fds[3].revents & POLLIN){
-				//GLOBAL POSTITION
+
 				orb_copy(ORB_ID(vehicle_global_position), global_position_sub_fd, &vgp_s);
 
 			}
+
+			/* vehicle_attitude */
 			if (fds[4].revents & POLLIN){
-				//vehicle_attitude
+
 				orb_copy(ORB_ID(vehicle_attitude), vehicle_attitude_sub_fd, &va_s);
 			}
+
+			/* GPS POSTITION */
 			if(fds[5].revents & POLLIN){
 
 				orb_copy(ORB_ID(vehicle_gps_position), gps_sub_fd, &gps_s);
 			}
+
 			/* there could be more file descriptors here, in the form like:
 			 * if (fds[1..n].revents & POLLIN) {}
 			 */
 		}
 
-		/** Sleep for 0.2 s */
+		/* Sleep for 0.2 s */
 		usleep(200000);
 	}
 
@@ -600,6 +699,7 @@ int bb_handler_thread_main(int argc, char *argv[]){
 	if (!usb_uart)
 			tcsetattr(uart, TCSANOW, &uart_config_original);
 
+	/* Set flag indicating that tread has stopped */
 	thread_running = false;
 
 	exit(0);
@@ -623,11 +723,13 @@ int bb_handler_thread_main(int argc, char *argv[]){
  */
 int bb_handler_main(int argc, char *argv[]){
 
+	/* Do basic error checking */
 	if (argc < 2) {
 		warnx("missing command");
 		usage();
 	}
 
+	/* Spawns bb_responder thread if not already running */
 	if (!strcmp(argv[1], "start")) {
 
 		/* this is not an error */
@@ -648,6 +750,7 @@ int bb_handler_main(int argc, char *argv[]){
 		exit(0);
 	}
 
+	/* Stop if running */
 	if (!strcmp(argv[1], "stop")) {
 		thread_should_exit = true;
 
@@ -661,6 +764,7 @@ int bb_handler_main(int argc, char *argv[]){
 		exit(0);
 	}
 
+	/* Gives status */
 	if (!strcmp(argv[1], "status")) {
 		if (thread_running) {
 			errx(0, "running");
@@ -670,10 +774,13 @@ int bb_handler_main(int argc, char *argv[]){
 		}
 	}
 
+	/* Sets debug flag */
 	if(!strcmp(argv[1], "debugon")){
 		bb_debug_mode = true;
 		exit(0);
 	}
+
+	/* Resets debug flag */
 	if(!strcmp(argv[1], "debugoff")){
 		bb_debug_mode = false;
 		exit(0);
@@ -681,6 +788,7 @@ int bb_handler_main(int argc, char *argv[]){
 
 	warnx("unrecognized command");
 	usage();
+
 	/* not getting here */
 	return 0;
 
@@ -704,15 +812,3 @@ void usage()
 
 /*EOF*/
 
-/*! @mainpage Doxygen documentation for the
- *
- * @section Introduction
- *
- * The bb_handler is the interface to BeagleBoard inside PX4
- *
- * @section install_sec Installation
- *
- * @subsection step1 Step 1: Opening the box
- *
- * etc...
- */
