@@ -737,7 +737,9 @@ int bb_handler_main(int argc, char *argv[]){
 		if (thread_running)
 			errx(0, "bb_handler already running\n");
 
+
 		thread_should_exit = false;
+
 		bb_task = task_spawn("bb_responder",
 				SCHED_DEFAULT,
 				SCHED_PRIORITY_DEFAULT,
