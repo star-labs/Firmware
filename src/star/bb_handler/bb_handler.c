@@ -18,7 +18,7 @@
 
  /**
  *
- * Denne filen er sterkt inspirert av mavlink.c
+ * @brief Inspired by mavlink.c
  *
  * @details A handler for BB communication
  * @author System for Tactical Aerial Reconnaissance
@@ -55,10 +55,14 @@
 //mavlink_fd = open(MAVLINK_LOG_DEVICE, 0);
 //#endif
 
+/* Daemon exit flag */
+volatile bool thread_should_exit = false;
 
-volatile bool thread_should_exit = false;		/**< @brief Daemon exit flag */
-static volatile bool thread_running = false;	/**< @brief Daemon status flag */
-static int bb_task;								/**< @brief Handle of daemon task / thread */
+/* Daemon status flag */
+static volatile bool thread_running = false;
+
+/* Handle of daemon task (thread) */
+static int bb_task;
 
 /* protocol interface */
 static int uart;
@@ -179,10 +183,10 @@ int bb_handler_thread_main(int argc, char *argv[]){
 
 	int ch;
 
-	/** @brief Default uart device if not overwritten by args */
+	/* Default uart device if not overwritten by args */
 	char *device_name = "/dev/ttyS1";
 
-	/** @brief Default uart baudrate if not overwritten by args */
+	/* Default uart baudrate if not overwritten by args */
 	baudrate = 57600;
 
 	char *tp;
@@ -277,7 +281,7 @@ int bb_handler_thread_main(int argc, char *argv[]){
 	/* Calculate number of file descriptors */
 	unsigned int num_fds = sizeof(fds) / sizeof(fds[0]);
 
-	/** @brief flag indicating that the RC-Capture-Trigger button is "pressed" */
+	/* flag indicating that the RC-Capture-Trigger button is "pressed" */
 	bool is_trigged = false;
 
 	/* Set default value for the selected command */
@@ -354,7 +358,7 @@ int bb_handler_thread_main(int argc, char *argv[]){
 			size_t newline_pos = strcspn(tokens[0], "|");
 
 			/*
-			 * "Reparerer" tokens[0] -- strcspn returnerer lengden av strengen om ikke \n blir funnet,
+			 * "Reparerer" tokens[0] -- strcspn returnerer lengden av strengen om ikke '\n' blir funnet,
 			 *  vi kan derfor trygt alltid overskrive denne verdien med '\0'
 			 */
 			tokens[0][ (int)newline_pos ] = '\0';
@@ -405,7 +409,7 @@ int bb_handler_thread_main(int argc, char *argv[]){
 				case S_OK:
 
 					/*
-					 * ---Mottar---
+					 * ::Mottar::
 					 * tokens[0]; //OK MELDING
 					 * tokens[1]; //filnavn
 					 */
@@ -514,7 +518,7 @@ int bb_handler_thread_main(int argc, char *argv[]){
 			}
 
 			/*
-			 * Send data over uart if there is data in the send-buffer
+			 * Send data over uart channel if there is data in the send-buffer
 			 */
 			send_len = strlen(send_buffer);
 			if(send_len > 0)
@@ -524,6 +528,7 @@ int bb_handler_thread_main(int argc, char *argv[]){
 
 			/* Reset selected flag after handled command */
 			selected = S_NA;
+
 			/* Reset read buffer after handled command */
 			read_buffer_local[0] = '\0';
 		}
@@ -798,7 +803,7 @@ int bb_handler_main(int argc, char *argv[]){
 }
 
 /**
- * @brief Printer bruk av deamon
+ * @brief Prints usage of this deamon
  * @retval void
  *
  */

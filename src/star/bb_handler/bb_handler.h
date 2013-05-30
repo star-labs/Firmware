@@ -38,18 +38,21 @@
  */
 #include <stdio.h>
 
+/** @brief Makro to compliment 'OK' makro defined in NuttX */
+#define NOT_OK 1
+/** @brief Makro size of in/out buffers 		*/
+#define BUFFER_SIZE 200
 
-#define NOT_OK 1			/**< Makro for å komplimentere OK makroen fra NuttX */
-#define BUFFER_SIZE 200		/**< Makro størrelsen til inn og ut bufferene 		*/
-#define BURST_MAX 100		/**< Bestemmer max antall bilder det er tillatt å ta i burst-modus */
+/** @brief Max number of images in burst mode*/
+#define BURST_MAX 100
 
 /**
- * @brief Globalt flagg for debug funksjon. Kan settes via komandolinjedirektivet debugon/debugoff
+ * @brief Global flag for debug. use commandline argument: debugon/debugoff
  */
 bool bb_debug_mode = false;
 
 
-/** @brief Egen type for tilgjenlige kommandoer (til BB)*/
+/** @brief internal cmd-types (to BB)*/
 typedef enum {
 	S_IMAGE 	= 0,
 	S_VIDEO 	= 1,
@@ -59,7 +62,7 @@ typedef enum {
 	S_FORCE 	= 5,
 } internal_cmd_t;
 
-/** @brief Egen type for tilgjenlige querrys (fra BB) */
+/** @brief internal query-types (from BB) */
 typedef enum {
 	S_NA 			= 0,
 	S_GETTIME 		= 1,
@@ -74,13 +77,13 @@ typedef enum {
 	S_GETSENSORS	= 10,
 } internal_query_t;
 
-/** @brief Strukt for å koble komandoene vi sender til BB mot interne navn*/
+/** @brief Structure for connecting the commands we send to BB against our internal names */
 struct cmds_s {
 	char cmd_name[20];
 	internal_cmd_t signal;
 };
 
-/** @brief Strukt for å koble komandoene vi mottar fra BB mot interne navn */
+/** @brief Structure for connecting received commands from BB against our internal names */
 struct query_s {
 	char cmd_name[20];
 	internal_query_t signal;
@@ -89,7 +92,7 @@ struct query_s {
 
 /* BB komunikasjons variable */
 
-/** @brief Kommandoer som BeagleBoard Capture tolker */
+/** @brief Commands that BeagleBoard Capture parses */
 const struct cmds_s cmds[] = {
 	{.cmd_name = "image", 	.signal = S_IMAGE},
 	{.cmd_name = "video", 	.signal = S_VIDEO},
@@ -98,7 +101,7 @@ const struct cmds_s cmds[] = {
 	{.cmd_name = "stop", 	.signal = S_STOP},
 	{.cmd_name = "force", 	.signal = S_FORCE},
 };
-/** @brief Querys som BeagleBoard Handler svarer på */
+/** @brief Querys that BeagleBoard Handler responds to */
 const struct query_s querys[] = {
 	{.cmd_name = "getall", 		.signal = S_GETALL},
 	{.cmd_name = "gettime", 	.signal = S_GETTIME},
@@ -114,15 +117,15 @@ const struct query_s querys[] = {
 
 };
 
-/** @brief Antall querys for BB_handler */
+/** @brief Number of querys for BB_handler */
 const int n_query = sizeof(querys) / sizeof(querys[0]);
 
-/** @brief Antall kommandoer for BB Capture */
+/** @brief Number of commands for BB Capture */
 const int n_cmds = sizeof(cmds) / sizeof(cmds[0]);
 
 /**
- * @brief Intern debuggings funksjon for bb_handler, avhenger av bb_debug_mode.
- * @param char* med debug tekst
+ * @brief Internal debugging function for bb_handler, dependent on bb_debug_mode.
+ * @param char* , debug text
  *
  */
 void bb_debug(char* debug_str)
@@ -135,7 +138,7 @@ void bb_debug(char* debug_str)
 }
 
 /**
- * @brief søkefunksjon for å hente cmd_name fra et gitt signal.
+ * @brief get cmd_name from cmd number.
  * @param internal_cmd_t
  */
 const char* get_command(internal_cmd_t c)
@@ -145,7 +148,7 @@ const char* get_command(internal_cmd_t c)
 			return cmds[i].cmd_name;
 	}
 
-	//Dette "kan ikke" skje, i såfall er det ikke samsvar mellom internal_cmd_t typen og cmds strukten.
+	/* Dette "kan ikke" skje, i såfall er det ikke samsvar mellom internal_cmd_t typen og cmds strukten. */
 	return "error";
 }
 
