@@ -1,7 +1,7 @@
 /****************************************************************************
  *
  *   Copyright (C) 2012 PX4 Development Team. All rights reserved.
- *   Author: @author Espen Nilsen -- STAR
+ *   Author: @author Espen Nilsen, Gunnar Sandaker -- STAR
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -148,7 +148,7 @@ const char* get_command(internal_cmd_t c)
 			return cmds[i].cmd_name;
 	}
 
-	/* Dette "kan ikke" skje, i såfall er det ikke samsvar mellom internal_cmd_t typen og cmds strukten. */
+	/* Dette "kan ikke" skje, i sï¿½fall er det ikke samsvar mellom internal_cmd_t typen og cmds strukten. */
 	return "error";
 }
 
